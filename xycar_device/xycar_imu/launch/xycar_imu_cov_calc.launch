@@ -1,0 +1,10 @@
+<launch>
+
+  <include file="$(find xycar_imu)/launch/xycar_imu.launch"/>
+  
+  <node pkg="xycar_imu" type="covariance_calc_imu" name="imu_calc" output="screen"> 
+     <param name="data_count" value="100"/>
+  </node> 
+     
+</launch>
+

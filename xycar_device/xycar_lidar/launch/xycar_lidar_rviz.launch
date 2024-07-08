@@ -1,0 +1,5 @@
+<launch>
+  <include file="$(find xycar_lidar)/launch/xycar_lidar.launch" />
+  
+  <node pkg="rviz" type="rviz" args="-d $(find xycar_lidar)/rviz/xycar_lidar.rviz" name="rviz_lidar" />
+</launch>

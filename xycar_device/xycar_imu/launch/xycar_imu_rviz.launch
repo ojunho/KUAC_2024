@@ -1,0 +1,7 @@
+<launch>
+
+  <include file="$(find xycar_imu)/launch/xycar_imu.launch"/>
+
+  <node pkg="rviz" type="rviz" args="-d $(find xycar_imu)/rviz/view_imu.rviz" name="rviz_imu"/>
+
+</launch>

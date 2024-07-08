@@ -1,0 +1,5 @@
+<library path="lib//libxycar_imu">
+
+  <class name="xycar_imu/Imu" type="rviz::ImuDisplay" base_class_type="rviz::Display"/>
+
+</library>
