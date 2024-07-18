@@ -5,7 +5,9 @@
 
   <!-- USB Camera node -->
   <include file="$(find usb_cam)/launch/xycar_cam.launch" />
-  
+  <include file="$(find xycar_lidar)/launch/xycar_lidar.launch" />
+  <include file="$(find obstacle_detector)/launch/obstacle_test.launch"/>
+  <node name="rviz" pkg="rviz" type="rviz" args="-d /home/default0715.rviz" />
   <node name="lane_detection" pkg="lane_detection" type="lane_detection.py" output="screen"/>
   
 </launch>

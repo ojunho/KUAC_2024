@@ -23,8 +23,11 @@
     <param name="frame_id"             value="laser_frame"/>
 
     <param name="min_x_limit" value="0.0"/>
-    <param name="max_x_limit" value="3.0"/>
-    <param name="min_y_limit" value="-0.5"/>
-    <param name="max_y_limit" value="0.5"/>
+    <param name="max_x_limit" value="2.0"/>
+    <param name="min_y_limit" value="-0.4"/>
+    <param name="max_y_limit" value="0.4"/>
   </node>
+  <include file="$(find xycar_lidar)/launch/xycar_lidar.launch" />
+  <node name="rviz" pkg="rviz" type="rviz" args="-d /home/default0715.rviz" />
+
 </launch>

@@ -13,15 +13,18 @@ from math import radians, pi  # 각도를 라디안으로 변환하는 함수 �
 from slidewindow import SlideWindow  # 슬라이드 윈도우 알고리즘 모듈 임포트
 import cv2  # OpenCV 라이브러리 임포트
 import numpy as np  # NumPy 라이브러리 임포트
+import math
 
 from cv_bridge import CvBridge, CvBridgeError  # CV-Bridge 라이브러리 임포트
 
 import rospy  # ROS 파이썬 라이브러리 임포트
 from sensor_msgs.msg import Image, CompressedImage  # 이미지 데이터 메시지 모듈 임포트
 
+from obstacle_detector.msg import Obstacles
+
 import tf
 
-
+from KMUfoscar import KMUFoscar
 
 
 
@@ -53,6 +56,9 @@ class LaneDetection(object):
             # 카메라와 IMU 데이터 구독
             rospy.Subscriber("/usb_cam/image_raw", Image, self.cameraCB)
             rospy.Subscriber("/imu", Imu, self.imuCB)
+            rospy.Subscriber("/raw_obstacles", Obstacles, self.obstacleCB)
+
+            self.foscar = KMUFoscar()
 
             # 모터 제어 명령과 현재 속도 퍼블리셔 설정
             self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor', xycar_motor, queue_size=1)
@@ -74,6 +80,8 @@ class LaneDetection(object):
             self.prev_center_index = 320  # 이전 중심 인덱스 초기화
             
             self.start_flag = False  # 신호등 감지 시작 플래그 초기화
+            self.static_flag = False
+            self.rubbercone_flag = False
             
             # IMU 기반 속도 계산을 위한 변수 초기화
             self.current_speed = 0.0
@@ -82,31 +90,25 @@ class LaneDetection(object):
 
             self.v_over_200_coords = []
 
-
+            self.obstacles = None
             self.v = None
 
             self.heading = 0.0
 
-            cv2.namedWindow('Camera')
-            cv2.setMouseCallback('Camera', self.mouse_callback)
-            
-            def nothing(x):
-                pass
-
-            cv2.namedWindow('Trackbar')
-            cv2.createTrackbar('H Lower', 'Trackbar', 0, 179, nothing)
-            cv2.createTrackbar('H Upper', 'Trackbar', 179, 179, nothing)
-            cv2.createTrackbar('S Lower', 'Trackbar', 0, 255, nothing)
-            cv2.createTrackbar('S Upper', 'Trackbar', 255, 255, nothing)
-            cv2.createTrackbar('V Lower', 'Trackbar', 0, 255, nothing)
-            cv2.createTrackbar('V Upper', 'Trackbar', 255, 255, nothing)
-
             rate = rospy.Rate(30)  # 루프 주기 설정
             while not rospy.is_shutdown():  # ROS 노드가 종료될 때까지 반복
+                if self.static_flag:
+                    print("=================================")
+                    if self.obstacles[0][1] > 0: # 왼쪽
+                        self.steer = 30
+                    elif self.obstacles[0][1] < 0:
+                        self.steer = -30
+                    else:
+                        self.steer = -30
+                    self.publishCtrlCmd(self.motor, self.steer)
 
-                if self.cv_image is not None:  # 카메라 이미지가 있는 경우
+                elif self.cv_image is not None:  # 카메라 이미지가 있는 경우
                     y, x = self.cv_image.shape[0:2]  # 이미지의 높이와 너비 가져오기
-
                     
                     # X: 640
                     # Y: 150
@@ -115,70 +117,13 @@ class LaneDetection(object):
                     cropped_image = self.cv_image[246:396, :]  # 이미지의 하단 부분만 사용
                     y, x = cropped_image.shape[0:2]
 
-
                     # cv2.imshow('cropped_image', cropped_image)
                     cropped_image_copy = cropped_image.copy()
-                    hsv_image = cv2.cvtColor(cropped_image_copy, cv2.COLOR_BGR2HSV)
-
-                    h_lower = cv2.getTrackbarPos('H Lower', 'Trackbar')
-                    h_upper = cv2.getTrackbarPos('H Upper', 'Trackbar')
-                    s_lower = cv2.getTrackbarPos('S Lower', 'Trackbar')
-                    s_upper = cv2.getTrackbarPos('S Upper', 'Trackbar')
-                    v_lower = cv2.getTrackbarPos('V Lower', 'Trackbar')
-                    v_upper = cv2.getTrackbarPos('V Upper', 'Trackbar')
-
-                    lower_bound = np.array([h_lower, s_lower, v_lower])
-                    upper_bound = np.array([h_upper, s_upper, v_upper])
-
-                    mask = cv2.inRange(hsv_image, lower_bound, upper_bound)
-                    range_image = cv2.bitwise_and(cropped_image_copy, cropped_image_copy, mask=mask)
-                    # cv2.imshow("HSV_Boud", range_image)
-
-                    # HSV 이미지의 각 채널 분리
-                    hsv_h, hsv_s, self.v = cv2.split(hsv_image)
-
-                    # cv2.imshow('hsv_h', hsv_h)
-                    # cv2.imshow('hsv_s', hsv_s)
-                    # cv2.imshow('hsv_v', self.v)
-
-                    self.v_over_200_coords = np.argwhere(self.v >= 110)
-
-
-                    # # V 값이 200 이상인 픽셀을 무시하기 위해 마스크 생성
-                    # mask = self.v < 200
-
-                    # # 마스크를 이용해 HSV 이미지에서 해당 픽셀을 무시 (0으로 설정)
-                    # h[~mask] = 0
-                    # s[~mask] = 0
-                    # self.v[~mask] = 0
-
-                    # # 마스크를 적용한 HSV 이미지를 다시 합치기
-                    # filtered_hsv = cv2.merge([h, s, self.v])
-
-                    # # 결과 이미지를 BGR로 변환
-                    # result_image = cv2.cvtColor(filtered_hsv, cv2.COLOR_HSV2BGR)
-
-                    # cv2.imshow('result_image', result_image)
-                    # ---------------------------- 작년 국자경 이미지처리 --------------------- #
-                    # cropped_image_copy = cropped_image.copy()
-                    # gray = cv2.cvtColor(cropped_image_copy, cv2.COLOR_BGR2GRAY)
-                    # blur_gray = cv2.GaussianBlur(gray, (5, 5), 0)
-
-                    # low_threshold = 70
-                    # high_threshold = 210
-                    # canny = cv2.Canny(blur_gray, low_threshold, high_threshold)
-                    # kernel_2 = np.ones((5, 5), np.uint8)
-                    # close = cv2.morphologyEx(canny, cv2.MORPH_CLOSE, kernel_2)
-                    # # warp_img = warper.warp(close)
-                    # # stop_img = warper.warp(blur_gray)
-                    # # _, stop_img_warp = cv2.threshold(stop_img, 150, 255, cv2.THRESH_BINARY)
-                    # ret, thres_img = cv2.threshold(close, 150, 255, cv2.THRESH_BINARY)
-                    # # stop_img_warp = stop_img_warp[390:480,240:380]
                     # -------------------------------------------------------------------- # 
 
 
                     # -------------------- 예선과제 이미지처리 ----------------------------- # 
-                    gray_img = cv2.cvtColor(range_image, cv2.COLOR_BGR2GRAY)  # 그레이스케일 변환
+                    gray_img = cv2.cvtColor(cropped_image_copy, cv2.COLOR_BGR2GRAY)  # 그레이스케일 변환
                     
                     blurred_image = cv2.GaussianBlur(gray_img, (15, 3), 0)  # 가우시안 블러(5, 5)
 
@@ -197,9 +142,6 @@ class LaneDetection(object):
                     # 형태학적 닫기 연산
                     kernel = np.ones((1, 1), np.uint8) # 4, 4
                     closed_image = cv2.morphologyEx(edged, cv2.MORPH_CLOSE, kernel)
-
-                    # for coord in self.v_over_200_coords:
-                    #     closed_image[coord[0], coord[1]] = 0
                     # ---------------------------------------------------------------------- #
 
 
@@ -263,7 +205,7 @@ class LaneDetection(object):
                     # print("Steer: ", self.steer)
                     self.motor = 30  # 모터 속도 설정
                     
-                    # self.publishCtrlCmd(self.motor, self.steer)  # 제어 명령 퍼블리시
+                    self.publishCtrlCmd(self.motor, self.steer)  # 제어 명령 퍼블리시
                     
                     # self.current_speed_msg.data = self.current_speed  # 현재 속도 설정
                     # self.current_speed_pub.publish(self.current_speed_msg)  # 현재 속도 퍼블리시
@@ -274,7 +216,7 @@ class LaneDetection(object):
                     # cv2.imshow('gray_img', gray_img)
                     # cv2.imshow('blurred_image', blurred_image)
                     # cv2.imshow('adaptive_gaussian', adaptive_gaussian)
-                    # cv2.imshow('edged', edged)
+                    cv2.imshow('edged', edged)
                     # cv2.imshow('closed_image', closed_image)
 
                     # cv2.imshow('warped_img', warped_img)
@@ -284,7 +226,7 @@ class LaneDetection(object):
                     cv2.waitKey(1)  # 키 입력 대기
 
 
-                    print("Heading: ", self.heading)
+                    # print("Heading: ", self.heading)
 
                 rate.sleep()  # 주기마다 대기
                 
@@ -292,8 +234,9 @@ class LaneDetection(object):
             cv2.destroyAllWindows()  # 창 닫기
         
     def publishCtrlCmd(self, motor_msg, servo_msg):
-        self.ctrl_cmd_msg.speed = motor_msg  # 모터 속도 설정
+        self.ctrl_cmd_msg.speed = 5 #motor_msg  # 모터 속도 설정
         self.ctrl_cmd_msg.angle = servo_msg  # 조향각 설정
+        print(servo_msg, end="  ")
         self.ctrl_cmd_pub.publish(self.ctrl_cmd_msg)  # 명령 퍼블리시
         
     def cameraCB(self, msg):
@@ -316,10 +259,68 @@ class LaneDetection(object):
         orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
         (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(orientation_list)
         self.heading = yaw * 180.0 / pi
-        
+
+    # LiDAR에서 장애물 좌표 받아오기 
+    def obstacleCB(self, msg):
+        try:
+            obstacles = []
+            for circle in msg.circles:
+                x = round(circle.center.x, 3)
+                y = round(circle.center.y, 3)
+                obstacles.append([x, y])
+
+            if (len(obstacles) == 0) :
+                self.static_flag = False
+                self.rubbercone_flag = False
+                self.obstacles = []
+            else:
+                self.obstacles = sorted(obstacles, key=lambda c: math.sqrt(c[0]**2 + c[1]**2))
+                closest = math.sqrt(self.obstacles[0][0] ** 2 + self.obstacles[0][1] ** 2)
+                print('Closest:', closest)
+
+                if closest  < 0.7:
+                    if 0 < len(self.obstacles) <= 2:
+                        print("STATIC")
+                        self.static_flag = True
+                        self.rubbercone_flag = False
+
+                    elif len(self.obstacles) >= 3:
+                        print("RUBBERCONE")
+                        self.static_flag = False
+                        self.rubbercone_flag = True
+
+            # print("obstacle distance:", self.foscar.static_obstacle_distance)
+            #-----------------------------------------------------------------#
+            # 3m 이내에 장애물이 있는 경우 회피 동작(수양이가 수정해보는 것)
+            # if self.foscar.static_obstacle_distance <= 3.0:
+            #     if self.foscar.static_obstacle_lcr == -1:
+            #         # 장애물이 왼쪽에 있는 경우
+            #         print("Obstacle on the left. Moving right.")
+            #         self.steer = 30  # 오른쪽으로 회전
+            #     elif self.foscar.static_obstacle_lcr == 1:
+            #         # 장애물이 오른쪽에 있는 경우
+            #         print("Obstacle on the right. Moving left.")
+            #         self.steer = -30  # 왼쪽으로 회전
+            #     else:
+            #         # 장애물이 중앙에 있는 경우
+            #         print("Obstacle in the center. Moving right.")
+            #         self.steer = 30  # 오른쪽으로 회전
+
+            #     self.motor = 20  # 속도 감소
+            #     self.publishCtrlCmd(self.motor, self.steer)
+
+            #-----------------------------------------------------------------#
+        except Exception as e:
+            print(e)
+            print("Obstacle Detection Fail")
+            self.obstacles = None
+
+
 
 if __name__ == '__main__':
     try:
+        import time
+        time.sleep(10)
         autopilot_control = LaneDetection()  # AutopilotControl 객체 생성
     except rospy.ROSInterruptException:
         pass  # 예외 발생 시 무시하고 종료
