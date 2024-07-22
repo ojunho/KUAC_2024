@@ -28,8 +28,15 @@ from KMUfoscar import KMUFoscar
 
 import tkinter as tk
 
+
+
 def nothing(x):
     pass
+
+#########
+state = 0
+initial_heading = 0
+#########
 
 # PID 클래스 정의
 class PID():
@@ -58,7 +65,8 @@ class LaneDetection(object):
         try:
             # 카메라와 IMU 데이터 구독
             rospy.Subscriber("/usb_cam/image_raw", Image, self.cameraCB)
-            # rospy.Subscriber("/imu", Imu, self.imuCB)
+            rospy.Subscriber("/imu", Imu, self.imuCB)
+            
             # rospy.Subscriber("/raw_obstacles", Obstacles, self.obstacleCB)
 
             self.foscar = KMUFoscar()
@@ -74,7 +82,8 @@ class LaneDetection(object):
             self.slidewindow = SlideWindow()  # 슬라이드 윈도우 알고리즘 초기화
             
             self.steer = 0.0  # 조향각 초기화
-            self.motor = 25.0  # 모터 속도 초기화
+            #----------------------------------------#
+            self.motor = 25  # 모터 속도 초기화 25
             
             # self.pid = PID(0.15, 0.0003, 0.325)  # PID 제어기 초기화
    
@@ -96,6 +105,13 @@ class LaneDetection(object):
 
             self.heading = 0.0
 
+            self.adjust_heading = 81.07
+            ############################
+            self.initial_heading = 0.0
+            self.right_heading = 0.0
+            self.left_heading = 0.0
+            self.state = 0
+            ############################
             self.lower_threshold = 100
             self.upper_threshold = 200
 
@@ -167,7 +183,7 @@ class LaneDetection(object):
 
             rate = rospy.Rate(30)  # 루프 주기 설정
             while not rospy.is_shutdown():  # ROS 노드가 종료될 때까지 반복
-
+                
                 if self.cv_image is not None:  # 카메라 이미지가 있는 경우
                     y, x = self.cv_image.shape[0:2]  # 이미지의 높이와 너비 가져오기
                     
@@ -338,7 +354,7 @@ class LaneDetection(object):
                     # self.steer = radians(angle)  # 각도를 라디안으로 변환
 
                     # print("Steer: ", self.steer)
-                    self.motor = 30  # 모터 속도 설정
+                    self.motor = 30 # 모터 속도 설정 30
                     
                     self.publishCtrlCmd(self.motor, self.steer)  # 제어 명령 퍼블리시
                     
@@ -361,7 +377,7 @@ class LaneDetection(object):
                     cv2.waitKey(1)  # 키 입력 대기
 
 
-                    # print("Heading: ", self.heading)
+                    print("Heading: ", self.heading)
 
                 rate.sleep()  # 주기마다 대기
                 
@@ -398,7 +414,17 @@ class LaneDetection(object):
         orientation_q = msg.orientation
         orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
         (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(orientation_list)
-        self.heading = yaw * 180.0 / pi
+        # self.heading = yaw * 180.0
+        self.heading = math.degrees(yaw)
+
+        # print('BEFORE: ', self.heading)
+        self.heading = self.heading - self.adjust_heading
+        # print('AFTER: ', self.heading)
+
+        if self.heading > 180:
+            self.heading -= 360
+        elif self.heading < -180:
+            self.heading += 360
 
     # LiDAR에서 장애물 좌표 받아오기 
     def obstacleCB(self, msg):
@@ -411,6 +437,7 @@ class LaneDetection(object):
             self.obstacles = sorted(obstacles, key=lambda c: math.sqrt(c[0]**2 + c[1]**2))
 
             # 장애물이 어느 방향에 있는지 (왼쪽, 중앙, 오른쪽)
+
             if self.obstacles[0][1] > 0:
                 self.foscar.static_obstacle_lcr = -1
             elif self.obstacles[0][1] < 0:
@@ -439,6 +466,61 @@ class LaneDetection(object):
                 self.motor = 20  # 속도 감소
                 self.publishCtrlCmd(self.motor, self.steer)
 
+            #-----------------------------------------------------------------#
+
+            #김동훈-----------------------------------------------------------------#
+    
+            # def obstacle_avoidance():
+            #     global state
+            #     global initial_heading
+
+            #     lidar_data = math.atan(self.obstacles[0][1] / self.obstacles[0][0])
+            #     initial_heading = self.heading
+                
+            #     if state == 0:
+            #         # Step 1: 오른쪽으로 조향하여 첫 번째 장애물 회피
+            #         if -46 < lidar_data["left_obstacle_angle"] < -44:
+            #             self.steer = 0
+            #             state += 1
+            #         else:
+            #             self.steer = 30
+                
+            #     elif state == 1:
+            #         # Step 2: 왼쪽으로 조향하여 두 번째 장애물 회피
+            #         if 44 < lidar_data["right_obstacle_angle"] < 46:
+            #             self.steer = 0
+            #             state += 1
+            #         else:
+            #             self.steer = -30
+
+            #     elif state == 2:
+            #         # Step 3: 오른쪽으로 조향하여 세 번째 장애물 회피
+            #         if -46 < lidar_data["left_obstacle_angle"] < -44:
+            #             self.steer = 0
+            #             state += 1
+            #         else:
+            #             self.steer = 30
+                
+            #     elif state == 3:
+            #         # Step 4: 좌조향하여 목표 헤딩값(좌조향된 헤딩값)까지 도달
+            #         target_yaw = initial_heading - 45
+            #         if self.heading <= target_yaw:
+            #             self.steer = 0
+            #             state += 1
+            #         else:
+            #             self.steer = -30
+                
+            #     elif state == 4:
+            #         # Step 5: 우조향하여 초기 헤딩값(장애물 전 직진하던 헤딩값)까지 도달
+            #         if self.heading >= initial_heading:
+            #             self.steer = 0
+            #             state += 1
+            #         else:
+            #             self.steer = 30
+                
+            #     elif state == 5:
+            #         # Step 6: 직진하면서 레인 키핑 기반 주행
+            #         self.steer = 0
             #-----------------------------------------------------------------#
         except:
             print("Obstacle Detection Fail")

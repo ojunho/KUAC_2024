@@ -94,6 +94,7 @@ class LaneDetection(object):
             self.v = None
 
             self.heading = 0.0
+            self.adjust_heading = 66.4
 
             rate = rospy.Rate(30)  # 루프 주기 설정
             while not rospy.is_shutdown():  # ROS 노드가 종료될 때까지 반복
@@ -205,7 +206,7 @@ class LaneDetection(object):
                     # print("Steer: ", self.steer)
                     self.motor = 30  # 모터 속도 설정
                     
-                    self.publishCtrlCmd(self.motor, self.steer)  # 제어 명령 퍼블리시
+                    # self.publishCtrlCmd(self.motor, self.steer)  # 제어 명령 퍼블리시
                     
                     # self.current_speed_msg.data = self.current_speed  # 현재 속도 설정
                     # self.current_speed_pub.publish(self.current_speed_msg)  # 현재 속도 퍼블리시
@@ -223,10 +224,12 @@ class LaneDetection(object):
                     cv2.imshow('out_img', out_img)
 
                     # cv2.imshow('thres_img', thres_img)
+                    print("Heading: ", self.heading)
+
+
                     cv2.waitKey(1)  # 키 입력 대기
 
 
-                    # print("Heading: ", self.heading)
 
                 rate.sleep()  # 주기마다 대기
                 
@@ -258,7 +261,18 @@ class LaneDetection(object):
         orientation_q = msg.orientation
         orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
         (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(orientation_list)
-        self.heading = yaw * 180.0 / pi
+        # self.heading = yaw * 180.0
+        self.heading = math.degrees(yaw)
+
+        # print('BEFORE: ', self.heading)
+        self.heading = self.heading - self.adjust_heading
+        # print('AFTER: ', self.heading)
+
+        if self.heading > 180:
+            self.heading -= 360
+        elif self.heading < -180:
+            self.heading += 360
+        
 
     # LiDAR에서 장애물 좌표 받아오기 
     def obstacleCB(self, msg):

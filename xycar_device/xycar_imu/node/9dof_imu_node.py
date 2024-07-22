@@ -77,10 +77,11 @@ class IMUdata(object):
         self.imuMsg.angular_velocity.y = float(raw_data[8])
         self.imuMsg.angular_velocity.z = float(raw_data[9])
 
-        #quaternion = (raw_data[4], raw_data[5], raw_data[6], raw_data[3])
-        #euler = euler_from_quaternion(quaternion)
-        #print(euler)
-
+        quaternion = (raw_data[4], raw_data[5], raw_data[6], raw_data[3])
+        euler = euler_from_quaternion(quaternion)  ## roll, pitch, yaw 값 순서
+        #---------------------------0720#
+        # print(euler[2])  ##yaw값 출력
+        #---------------------------#
     def Pub_thread(self):
         rospy.loginfo("Publishing IMU data...")
         while not rospy.is_shutdown():

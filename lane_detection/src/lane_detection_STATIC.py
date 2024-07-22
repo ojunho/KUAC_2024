@@ -17,6 +17,7 @@ import math
 
 from cv_bridge import CvBridge, CvBridgeError  # CV-Bridge 라이브러리 임포트
 
+import os
 import rospy  # ROS 파이썬 라이브러리 임포트
 from sensor_msgs.msg import Image, CompressedImage  # 이미지 데이터 메시지 모듈 임포트
 
@@ -100,12 +101,15 @@ class LaneDetection(object):
             while not rospy.is_shutdown():  # ROS 노드가 종료될 때까지 반복
                 if self.static_flag:
                     print("=================================")
+                    tangent = self.obstacles[0][1] / self.obstacles[0][0]
+                    degree = math.atan(tangent) * 180 / math.pi
                     if self.static_left: # 왼쪽
-                        self.steer = 30
-                    elif self.obstacles[0][1] < 0:
-                        self.steer = -30
+                        # self.steer = round(163 - 5.56 * degree + 0.04 * degree ** 2)
+                        self.steer = round(38 - 1.74 * degree + 0.0136 * degree ** 2) # 38.1 + -1.74x + 0.0136x^2
                     else:
-                        self.steer = -30
+                        self.steer = round(-163 - 5.56 * degree - 0.04 * degree ** 2)
+                    os.system("clear")
+                    print(f"STATIC: {'LEFT' if self.static_left else 'RIGHT'}, Degree: {degree:.2f}, Steer: {self.steer:.2f}")
                     self.publishCtrlCmd(self.motor, self.steer)
 
                 elif self.cv_image is not None:  # 카메라 이미지가 있는 경우
@@ -204,7 +208,7 @@ class LaneDetection(object):
                     # self.steer = radians(angle)  # 각도를 라디안으로 변환
 
                     # print("Steer: ", self.steer)
-                    self.motor = 30  # 모터 속도 설정
+                    self.motor = 5  # 모터 속도 설정
                     
                     self.publishCtrlCmd(self.motor, self.steer)  # 제어 명령 퍼블리시
                     
@@ -279,15 +283,15 @@ class LaneDetection(object):
                 closest = math.sqrt(self.obstacles[0][0] ** 2 + self.obstacles[0][1] ** 2)
                 print('Closest:', closest)
 
-                if closest  < 0.7:
+                if closest  < 0.7: # 0.7:
                     if 0 < len(self.obstacles) <= 2:
                         print("STATIC")
                         self.static_flag = True
                         self.rubbercone_flag = False
                         if self.obstacles[0][1] > 0:
-                            self.static_left = 1
+                            self.static_left = True
                         else:
-                            self.static_left = -1
+                            self.static_left = False
 
                     elif len(self.obstacles) >= 3:
                         print("RUBBERCONE")
