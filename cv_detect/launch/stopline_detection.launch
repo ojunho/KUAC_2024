@@ -1,0 +1,3 @@
+<launch>
+  <node name="stopline_detection_node" pkg="cv_detect" type="stopline_detection.py" output="screen"/>
+</launch>

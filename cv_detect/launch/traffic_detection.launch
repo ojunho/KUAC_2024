@@ -1,0 +1,3 @@
+<launch>
+  <node name="traffic_detection_node" pkg="cv_detect" type="traffic_detection.py" output="screen"/>
+</launch>
