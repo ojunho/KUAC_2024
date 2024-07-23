@@ -1,13 +1,11 @@
 <launch>
+  <!-- IMU 기반 heading 계산기 -->
+  <include file="$(find heading)/launch/imu_heading.launch"/>
 
-  <!-- motor node -->
-  <include file="$(find xycar_motor)/launch/xycar_motor.launch" />
-
-  <!-- USB Camera node -->
-  <include file="$(find usb_cam)/launch/xycar_cam.launch" />
-  <include file="$(find xycar_lidar)/launch/xycar_lidar.launch" />
+  <!-- 라이다 기반 Clustering 진행 -->
   <include file="$(find obstacle_detector)/launch/obstacle_test.launch"/>
+  
   <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d /home/default0715.rviz" /> -->
-  <node name="lane_detection" pkg="lane_detection" type="lane_detection_STATIC.py" output="screen"/>
+  <node name="lane_detection" pkg="lane_detection" type="lane_detection.py" output="screen"/>
   
 </launch>

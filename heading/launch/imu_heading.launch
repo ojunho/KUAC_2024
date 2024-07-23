@@ -1,0 +1,3 @@
+<launch>
+    <node name="imu_heading" pkg="heading" type="imu_heading_calc" output="screen"/>
+</launch>

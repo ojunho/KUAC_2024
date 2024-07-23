@@ -22,9 +22,10 @@ from sensor_msgs.msg import Image, CompressedImage  # 이미지 데이터 메시
 
 from obstacle_detector.msg import Obstacles
 
+from utils import *
+
 import tf
 
-from KMUfoscar import KMUFoscar
 
 
 
@@ -58,7 +59,6 @@ class LaneDetection(object):
             rospy.Subscriber("/imu", Imu, self.imuCB)
             rospy.Subscriber("/raw_obstacles", Obstacles, self.obstacleCB)
 
-            self.foscar = KMUFoscar()
 
             # 모터 제어 명령과 현재 속도 퍼블리셔 설정
             self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor', xycar_motor, queue_size=1)
@@ -94,7 +94,6 @@ class LaneDetection(object):
             self.v = None
 
             self.heading = 0.0
-            self.adjust_heading = 66.4
 
             rate = rospy.Rate(30)  # 루프 주기 설정
             while not rospy.is_shutdown():  # ROS 노드가 종료될 때까지 반복
@@ -109,77 +108,12 @@ class LaneDetection(object):
                     self.publishCtrlCmd(self.motor, self.steer)
 
                 elif self.cv_image is not None:  # 카메라 이미지가 있는 경우
-                    y, x = self.cv_image.shape[0:2]  # 이미지의 높이와 너비 가져오기
-                    
-                    # X: 640
-                    # Y: 150
+                    cropped_image = roi_for_lane(self.cv_image)
+                    gray_img, blurred_image, adaptive_gaussian, edged, closed_image = process_image(cropped_image)
+                    warped_img = warper(closed_image)
+                
 
 
-                    cropped_image = self.cv_image[246:396, :]  # 이미지의 하단 부분만 사용
-                    y, x = cropped_image.shape[0:2]
-
-                    # cv2.imshow('cropped_image', cropped_image)
-                    cropped_image_copy = cropped_image.copy()
-                    # -------------------------------------------------------------------- # 
-
-
-                    # -------------------- 예선과제 이미지처리 ----------------------------- # 
-                    gray_img = cv2.cvtColor(cropped_image_copy, cv2.COLOR_BGR2GRAY)  # 그레이스케일 변환
-                    
-                    blurred_image = cv2.GaussianBlur(gray_img, (15, 3), 0)  # 가우시안 블러(5, 5)
-
-                    # 적응형 이진화
-                    adaptive_gaussian = cv2.adaptiveThreshold(blurred_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                                              cv2.THRESH_BINARY, 9, -2.5) # 11, -2.5
-                    sigma = 0.33
-                    median_value = np.median(adaptive_gaussian)
-                    lower = int(max(0, (1.0-sigma) * median_value))
-                    upper = int(min(255, (1.0 + sigma) * median_value))
-                    edged = cv2.Canny(adaptive_gaussian, lower, upper)
-
-                    # 캐니 에지 검출
-                    # edges = cv2.Canny(adaptive_gaussian, 70, 210) # 50, 150
-
-                    # 형태학적 닫기 연산
-                    kernel = np.ones((1, 1), np.uint8) # 4, 4
-                    closed_image = cv2.morphologyEx(edged, cv2.MORPH_CLOSE, kernel)
-                    # ---------------------------------------------------------------------- #
-
-
-                    # X: 0, Y: 130, Pixel Value: 76
-                    # X: 166, Y: 54, Pixel Value: 65
-                    # X: 498, Y: 57, Pixel Value: 66
-                    # X: 637, Y: 106, Pixel Value: 79
-
-
-                    # 카메라 위치 (y=1.5)
-                    left_margin_1 = 0
-                    top_margin_1 = 130
-
-
-                    
-                    left_margin_2 = 180
-                    top_margin_2 = 54
-
-
-                    
-                    src_point1 = [left_margin_1, top_margin_1]  # 왼쪽 아래 점
-                    src_point2 = [left_margin_2, top_margin_2]  # 왼쪽 위 점
-                    src_point3 = [x - left_margin_2, top_margin_2]  # 오른쪽 위 점
-                    src_point4 = [x - left_margin_1, top_margin_1]  # 오른쪽 아래 점
-
-                    src_points = np.float32([src_point1, src_point2, src_point3, src_point4])  # 원본 이미지에서의 점들
-                    
-                    dst_point1 = [x // 4, y]  # 변환 이미지에서의 왼쪽 아래 점
-                    dst_point2 = [x // 4, 0]  # 변환 이미지에서의 왼쪽 위 점
-                    dst_point3 = [x // 4 * 3, 0]  # 변환 이미지에서의 오른쪽 위 점
-                    dst_point4 = [x // 4 * 3, y]  # 변환 이미지에서의 오른쪽 아래 점
-
-                    dst_points = np.float32([dst_point1, dst_point2, dst_point3, dst_point4])  # 변환 이미지에서의 점들
-                    
-                    matrix = cv2.getPerspectiveTransform(src_points, dst_points)  # 원근 변환 행렬 계산
-                    warped_img = cv2.warpPerspective(edged, matrix, (x, y))  # 원근 변환 적용
-                    
                     out_img, x_location, _ = self.slidewindow.slidewindow(warped_img)  # 슬라이드 윈도우 알고리즘 적용
 
                     if x_location == None:  # x 위치가 없는 경우
@@ -187,45 +121,13 @@ class LaneDetection(object):
                     else:
                         last_x_location = x_location  # x 위치 갱신
                     
-                    center_index = x_location  # 중심 인덱스 설정
                     
-                    # 튀는 값 잡기
-                    diff_center_index = abs(center_index - self.prev_center_index)
-                    # print("Diff Center Index: ", diff_center_index)
-                    if diff_center_index > 50:  # 차이가 60보다 큰 경우
-                        center_index = self.prev_center_index  # 이전 중심 인덱스 사용
-                        # print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                    else:
-                        self.prev_center_index = center_index  # 중심 인덱스 갱신
+                    self.steer = round(self.pid.pid_control(x_location - 320))  # PID 제어를 통한 각도 계산
+
+                    self.motor = 30 # 모터 속도 설정 30
                     
-                    angle = round(self.pid.pid_control(center_index - 320))  # PID 제어를 통한 각도 계산
-                    # angle = round(center_index - 320)
-                    self.steer = angle
-                    # self.steer = radians(angle)  # 각도를 라디안으로 변환
-
-                    # print("Steer: ", self.steer)
-                    self.motor = 30  # 모터 속도 설정
+                    self.publishCtrlCmd(self.motor, self.steer)  # 제어 명령 퍼블리시
                     
-                    # self.publishCtrlCmd(self.motor, self.steer)  # 제어 명령 퍼블리시
-                    
-                    # self.current_speed_msg.data = self.current_speed  # 현재 속도 설정
-                    # self.current_speed_pub.publish(self.current_speed_msg)  # 현재 속도 퍼블리시
-
-                    # cv2.imshow("Camera", self.cv_image)
-                    # cv2.imshow('cropped_image', cropped_image)
-
-                    # cv2.imshow('gray_img', gray_img)
-                    # cv2.imshow('blurred_image', blurred_image)
-                    # cv2.imshow('adaptive_gaussian', adaptive_gaussian)
-                    cv2.imshow('edged', edged)
-                    # cv2.imshow('closed_image', closed_image)
-
-                    # cv2.imshow('warped_img', warped_img)
-                    cv2.imshow('out_img', out_img)
-
-                    # cv2.imshow('thres_img', thres_img)
-                    print("Heading: ", self.heading)
-
 
                     cv2.waitKey(1)  # 키 입력 대기
 
@@ -248,31 +150,6 @@ class LaneDetection(object):
         except CvBridgeError as e:
             print(e)
     
-    # 마우스 콜백 함수 정의
-    def mouse_callback(self, event, x, y, flags, param):
-        if event == cv2.EVENT_LBUTTONDOWN:
-            # 현재 프레임에서 픽셀 값을 읽음
-            pixel_value = self.v[y, x]
-            # 픽셀 값과 좌표를 출력
-            print(f'X: {x}, Y: {y}, Pixel Value: {pixel_value}')
-
-    def imuCB(self, msg):
-        # 쿼터니언을 사용하여 roll, pitch, yaw 계산
-        orientation_q = msg.orientation
-        orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
-        (roll, pitch, yaw) = tf.transformations.euler_from_quaternion(orientation_list)
-        # self.heading = yaw * 180.0
-        self.heading = math.degrees(yaw)
-
-        # print('BEFORE: ', self.heading)
-        self.heading = self.heading - self.adjust_heading
-        # print('AFTER: ', self.heading)
-
-        if self.heading > 180:
-            self.heading -= 360
-        elif self.heading < -180:
-            self.heading += 360
-        
 
     # LiDAR에서 장애물 좌표 받아오기 
     def obstacleCB(self, msg):

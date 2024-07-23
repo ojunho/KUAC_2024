@@ -32,8 +32,9 @@ class SlideWindow:
         width = img.shape[1]  # 이미지 너비
 
         # 윈도우 개수 및 높이 초기화
-        window_height = 15  # 윈도우 높이
-        nwindows = height // window_height  # 윈도우 개수
+        window_height = 10  # 윈도우 높이
+        # nwindows = height // window_height  # 윈도우 개수
+        nwindows = 10
         
         # 이미지에서 비영점 위치 찾기
         nonzero = img.nonzero()  # 이미지에서 비영점 찾기
@@ -59,7 +60,7 @@ class SlideWindow:
         win_h2 = 150  # 윈도우 높이 2
         win_l_w_l = 180 - 65  # 왼쪽 윈도우 왼쪽 경계
         win_l_w_r = 180 + 50  # 왼쪽 윈도우 오른쪽 경계
-        win_r_w_l = 480 - 50  # 오른쪽 윈도우 왼쪽 경계
+        win_r_w_l = 480 - 65  # 오른쪽 윈도우 왼쪽 경계
         win_r_w_r = 480 + 50  # 오른쪽 윈도우 오른쪽 경계
         # ---------------------------------------------
 
@@ -84,6 +85,8 @@ class SlideWindow:
         good_left_inds = ((nonzerox >= win_l_w_l) & (nonzeroy <= win_h2) & (nonzeroy > win_h1) & (nonzerox <= win_l_w_r)).nonzero()[0]
         good_right_inds = ((nonzerox >= win_r_w_l) & (nonzeroy <= win_h2) & (nonzeroy > win_h1) & (nonzerox <= win_r_w_r)).nonzero()[0]
 
+        # print(f"L: {len(good_left_inds)}\nR: {len(good_right_inds)}")
+
         y_current = height - 1  # 현재 y 위치 초기화
         x_current = None  # 현재 x 위치 초기화
 
@@ -91,11 +94,11 @@ class SlideWindow:
         if len(good_left_inds) > len(good_right_inds): 
             line_flag = 1  # 왼쪽 라인 플래그 설정
             x_current = int(np.mean(nonzerox[good_left_inds]))  # 현재 x 위치 설정
-            y_current = int(np.mean(nonzeroy[good_left_inds]))  # 현재 y 위치 설정
+            # y_current = int(np.mean(nonzeroy[good_left_inds]))  # 현재 y 위치 설정
         elif len(good_left_inds) < len(good_right_inds):
             line_flag = 2  # 오른쪽 라인 플래그 설정
             x_current = int(np.mean(nonzerox[good_right_inds]))  # 현재 x 위치 설정
-            y_current = int(np.mean(nonzeroy[good_right_inds]))  # 현재 y 위치 설정
+            # y_current = int(np.mean(nonzeroy[good_right_inds]))  # 현재 y 위치 설정
         else:
             self.current_line = "MID"  # 중앙 라인 설정
             line_flag = 3  # 중앙 라인 플래그 설정
@@ -111,43 +114,51 @@ class SlideWindow:
 
         # 윈도우를 반복하며 라인 찾기
         for window in range(nwindows):
-            win_y_low = height - (window + 1) * window_height  # 윈도우 아래쪽 y 좌표
-            win_y_high = height - window * window_height  # 윈도우 위쪽 y 좌표
 
-            if line_flag == 1:  # 왼쪽 라인일 경우
-                win_x_low = x_current - margin  # 윈도우 왼쪽 x 좌표
-                win_x_high = x_current + margin  # 윈도우 오른쪽 x 좌표
-                cv2.rectangle(out_img, (win_x_low, win_y_low), (win_x_high, win_y_high), (0, 255, 0), 1)
-                cv2.rectangle(out_img, (win_x_low + int(width * road_width), win_y_low), (win_x_high + int(width * road_width), win_y_high), (255, 0, 0), 1)
-                good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_x_low) & (nonzerox < win_x_high)).nonzero()[0]
-                if len(good_left_inds) > minpix:
-                    x_current = int(np.mean(nonzerox[good_left_inds]))
-                elif nonzeroy[left_lane_inds] != [] and nonzerox[left_lane_inds] != []:
-                    p_left = np.polyfit(nonzeroy[left_lane_inds], nonzerox[left_lane_inds], 2) 
-                    x_current = int(np.polyval(p_left, win_y_high))
-                if circle_height - 10 <= win_y_low < circle_height + 10:
-                    x_location = int(x_current + width * half_road_width)
-                    cv2.circle(out_img, (x_location, circle_height), 10, (0, 0, 255), 5)
-
-            elif line_flag == 2:  # 오른쪽 라인일 경우
-                win_x_low = x_current - margin  # 윈도우 왼쪽 x 좌표
-                win_x_high = x_current + margin  # 윈도우 오른쪽 x 좌표
-                cv2.rectangle(out_img, (win_x_low - int(width * road_width), win_y_low), (win_x_high - int(width * road_width), win_y_high), (0, 255, 0), 1)
-                cv2.rectangle(out_img, (win_x_low, win_y_low), (win_x_high, win_y_high), (255, 0, 0), 1)
-                good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_x_low) & (nonzerox < win_x_high)).nonzero()[0]
-                if len(good_right_inds) > minpix:
-                    x_current = int(np.mean(nonzerox[good_right_inds]))
-                elif nonzeroy[right_lane_inds] != [] and nonzerox[right_lane_inds] != []:
-                    p_right = np.polyfit(nonzeroy[right_lane_inds], nonzerox[right_lane_inds], 2) 
-                    x_current = int(np.polyval(p_right, win_y_high))
-                if circle_height - 10 <= win_y_low < circle_height + 10:
-                    x_location = int(x_current - width * half_road_width)
-                    cv2.circle(out_img, (x_location, circle_height), 10, (0, 0, 255), 5)
-
-            else:  # 중앙 라인일 경우
+            if line_flag == 3:
                 x_location = self.x_previous
                 cv2.circle(out_img, (x_location, circle_height), 10, (0, 0, 255), 5)
 
+
+            else:
+                win_y_low = y_current - (window + 1) * window_height  # 윈도우 아래쪽 y 좌표
+                win_y_high = y_current - window * window_height  # 윈도우 위쪽 y 좌표
+                win_x_low = x_current - margin  # 윈도우 왼쪽 x 좌표
+                win_x_high = x_current + margin  # 윈도우 오른쪽 x 좌표
+
+                if line_flag == 1:  # 왼쪽 라인일 경우
+                    
+                    cv2.rectangle(out_img, (win_x_low, win_y_low), (win_x_high, win_y_high), (0, 255, 0), 1)
+                    cv2.rectangle(out_img, (win_x_low + int(width * road_width), win_y_low), (win_x_high + int(width * road_width), win_y_high), (255, 0, 0), 1)
+                    good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_x_low) & (nonzerox < win_x_high)).nonzero()[0]
+
+
+                    # print(f"L: {len(good_left_inds)}")
+                    if len(good_left_inds) > minpix:
+                        x_current = int(np.mean(nonzerox[good_left_inds]))
+                    elif nonzeroy[left_lane_inds] != [] and nonzerox[left_lane_inds] != []:
+                        p_left = np.polyfit(nonzeroy[left_lane_inds], nonzerox[left_lane_inds], 2) 
+                        x_current = int(np.polyval(p_left, win_y_high))
+                    if circle_height - 10 <= win_y_low < circle_height + 10:
+                        x_location = int(x_current + width * half_road_width)
+                        cv2.circle(out_img, (x_location, circle_height), 10, (0, 0, 255), 5)
+
+                elif line_flag == 2:  # 오른쪽 라인일 경우
+                    cv2.rectangle(out_img, (win_x_low - int(width * road_width), win_y_low), (win_x_high - int(width * road_width), win_y_high), (0, 255, 0), 1)
+                    cv2.rectangle(out_img, (win_x_low, win_y_low), (win_x_high, win_y_high), (255, 0, 0), 1)
+                    good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & (nonzerox >= win_x_low) & (nonzerox < win_x_high)).nonzero()[0]
+                    
+                    # print(f"R: {len(good_right_inds)}")
+                    if len(good_right_inds) > minpix:
+                        x_current = int(np.mean(nonzerox[good_right_inds]))
+                    elif nonzeroy[right_lane_inds] != [] and nonzerox[right_lane_inds] != []:
+                        p_right = np.polyfit(nonzeroy[right_lane_inds], nonzerox[right_lane_inds], 2) 
+                        x_current = int(np.polyval(p_right, win_y_high))
+                    if circle_height - 10 <= win_y_low < circle_height + 10:
+                        x_location = int(x_current - width * half_road_width)
+                        cv2.circle(out_img, (x_location, circle_height), 10, (0, 0, 255), 5)
+
+            
             # x 위치 설정
             if x_location == 320:
                 x_location = self.x_previous

@@ -1,0 +1,16 @@
+<launch>
+    <!-- motor node -->
+    <include file="$(find xycar_motor)/launch/xycar_motor.launch" />
+
+    <!-- IMU node -->
+    <include file="$(find xycar_imu)/launch/xycar_imu.launch" />
+
+    <!-- USB Camera node -->
+    <include file="$(find usb_cam)/launch/xycar_cam.launch" />
+
+    <!-- 2D LiDAR node -->
+    <include file="$(find xycar_lidar)/launch/xycar_lidar.launch" />
+
+    <!-- Ultrasonic node -->
+    <include file="$(find xycar_ultrasonic)/launch/xycar_ultrasonic.launch" />
+</launch>

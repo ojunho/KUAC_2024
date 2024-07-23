@@ -1,0 +1,5 @@
+<launch>
+    <include file="$(find ar_track_alvar)/launch/pr2_bundle.launch" />
+
+    <node name="ar_tag_driver" pkg="ar_tag_driver" type="ar_tag_driver.py" output="screen"/>
+</launch>
