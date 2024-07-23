@@ -82,7 +82,7 @@ class LaneDetection(object):
             
             self.start_flag = False  # 신호등 감지 시작 플래그 초기화
             self.static_flag = False
-            self.static_left = False # left 1, right -1, center 0
+            self.static_left = False # left True, right False
             self.rubbercone_flag = False
             
             # IMU 기반 속도 계산을 위한 변수 초기화
@@ -97,18 +97,39 @@ class LaneDetection(object):
 
             self.heading = 0.0
 
+            mission = "lane_detection"
+
             rate = rospy.Rate(30)  # 루프 주기 설정
             while not rospy.is_shutdown():  # ROS 노드가 종료될 때까지 반복
-                if self.static_flag:
-                    print("=================================")
-                    tangent = self.obstacles[0][1] / self.obstacles[0][0]
-                    degree = math.atan(tangent) * 180 / math.pi
-                    if self.static_left: # 왼쪽
-                        # self.steer = round(163 - 5.56 * degree + 0.04 * degree ** 2)
-                        self.steer = round(38 - 1.74 * degree + 0.0136 * degree ** 2) # 38.1 + -1.74x + 0.0136x^2
+                # 상태 전환
+                if mission == "static_obstacles":
+                    if len(self.obstacles) == 0:
+                        mission = "lane_detection"
+                elif mission == "lane_detection":
+                    if 0 < len(self.obstacles) < 3:
+                        mission = "static_obstacles"
+                        if self.obstacles[0][1] > 0:
+                            self.static_left = True
+
+                print("현재 미션:", mission)
+
+                # 제어
+                if mission == "static_obstacles":
+                    if len(self.obstacles) == 0:
+                        # 초음파
+                        pass
                     else:
-                        self.steer = round(-163 - 5.56 * degree - 0.04 * degree ** 2)
-                    os.system("clear")
+                        tangent = self.obstacles[0][1] / self.obstacles[0][0]
+                        degree = math.atan(tangent) * 180 / math.pi
+
+                        if degree > 0: # 왼쪽 장애물
+                            if degree <= 30:
+                                self.steer = 30
+                            elif degree <= 60:
+                                self.steer = -30
+                        else:
+                            pass
+                        
                     print(f"STATIC: {'LEFT' if self.static_left else 'RIGHT'}, Degree: {degree:.2f}, Steer: {self.steer:.2f}")
                     self.publishCtrlCmd(self.motor, self.steer)
 
@@ -274,31 +295,9 @@ class LaneDetection(object):
                 y = round(circle.center.y, 3)
                 obstacles.append([x, y])
 
-            if (len(obstacles) == 0) :
-                self.static_flag = False
-                self.rubbercone_flag = False
-                self.obstacles = []
-            else:
+            if len(obstacles) > 0:
                 self.obstacles = sorted(obstacles, key=lambda c: math.sqrt(c[0]**2 + c[1]**2))
-                closest = math.sqrt(self.obstacles[0][0] ** 2 + self.obstacles[0][1] ** 2)
-                print('Closest:', closest)
 
-                if closest  < 0.7: # 0.7:
-                    if 0 < len(self.obstacles) <= 2:
-                        print("STATIC")
-                        self.static_flag = True
-                        self.rubbercone_flag = False
-                        if self.obstacles[0][1] > 0:
-                            self.static_left = True
-                        else:
-                            self.static_left = False
-
-                    elif len(self.obstacles) >= 3:
-                        print("RUBBERCONE")
-                        self.static_flag = False
-                        self.rubbercone_flag = True
-
-            # print("obstacle distance:", self.foscar.static_obstacle_distance)
             #-----------------------------------------------------------------#
             # 3m 이내에 장애물이 있는 경우 회피 동작(수양이가 수정해보는 것)
             # if self.foscar.static_obstacle_distance <= 3.0:
