@@ -32,9 +32,11 @@ class StaticAvoidance():
             if self.state == 'LANE_DETECTION':
                 print("=======================")
                 print("lane_detection")
-                if len(self.obstacles) > 0 and math.sqrt(self.obstacles[0][0] ** 2 + self.obstacles[0][1] ** 2) < 1.0:
-                    self.state = 'OBSTACLE_DETECTED'
+                if len(self.obstacles) > 0:
+                    self.speed = 10
                     self.is_static = True
+                    if math.sqrt(self.obstacles[0][0] ** 2 + self.obstacles[0][1] ** 2) < 1.0:
+                        self.state = 'OBSTACLE_DETECTED'
             
             elif self.state == 'OBSTACLE_DETECTED':
                 print("static_obstacle")
