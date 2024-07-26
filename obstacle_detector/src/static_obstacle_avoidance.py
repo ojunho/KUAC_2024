@@ -18,15 +18,15 @@ class StaticAvoidance():
         self.ultrasonic = [] # 왼쪽, 오른쪽, 오른쪽뒤, 뒤, 왼쪽뒤
         self.is_static = False
         self.steer = 0
+        self.speed = 20
         self.is_left = False
 
         self.steer_right_time = 0
         self.steer_left_time = 0
         self.final_adjust_time = 0
 
-        self.static_pub = rospy.Publisher("static_steer", Int32, queue_size=5)
-        self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor', xycar_motor, queue_size=1)
-
+        self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor_static', xycar_motor, queue_size=1)
+        self.ctrl_cmd_msg = xycar_motor()
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
             if self.state == 'LANE_DETECTION':
@@ -46,24 +46,21 @@ class StaticAvoidance():
             
             elif self.state == 'STEER_RIGHT':
                 if time.time() - self.steer_right_time < 1:
-                    self.steer = 30
-                    self.publishCtrlCmd(0, self.steer)
+                    self.steer = 20
                 else:
                     start_time = time.time()
                     self.state = 'STEER_LEFT'
                     self.steer_left_time = start_time
             
             elif self.state == 'STEER_LEFT':
-                if time.time() - self.steer_left_time < 1:
+                if time.time() - self.steer_left_time < 1.5:
                     self.steer = -20
-                    self.publishCtrlCmd(0, self.steer)
                 else:
                     self.state = 'STRAIGHT'
             
             elif self.state == 'STRAIGHT':
                 if self.ultrasonic[0] < 25:
                     self.steer = 0
-                    self.publishCtrlCmd(0, self.steer)
                 else:
                     start_time = time.time()
                     self.state = 'FINAL_ADJUST'
@@ -72,10 +69,11 @@ class StaticAvoidance():
             elif self.state == 'FINAL_ADJUST':
                 if time.time() - self.final_adjust_time < 0.5:
                     self.steer = -10
-                    self.publishCtrlCmd(0, self.steer)
                 else:
                     self.state = 'LANE_DETECTION'
                     self.is_static = False
+
+            self.publishCtrlCmd(self.speed, self.steer)
 
 
             # self.static_pub.publish(self.steer)
@@ -104,7 +102,7 @@ class StaticAvoidance():
         self.ultrasonic = ultrasonic
 
     def publishCtrlCmd(self, motor_msg, servo_msg):
-        self.ctrl_cmd_msg.speed = 0  # 모터 속도 설정
+        self.ctrl_cmd_msg.speed = motor_msg  # 모터 속도 설정
         self.ctrl_cmd_msg.angle = servo_msg  # 조향각 설정
         self.ctrl_cmd_pub.publish(self.ctrl_cmd_msg)  # 명령 퍼블리시
 
