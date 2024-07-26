@@ -10,6 +10,8 @@ from geometry_msgs.msg import Pose
 
 import math
 
+import tf
+
 
 
 class ArTagDriver:
@@ -23,14 +25,9 @@ class ArTagDriver:
         # for ar tag
         self.sorted_ar_list = []
         self.arData = {"DX":0.0, "DY":0.0, "DZ":0.0, "AX":0.0, "AY":0.0, "AZ":0.0, "AW":0.0}
-        # ar_roll, ar_pitch, ar_yaw = 0, 0, 0
-        # k = 2
-        # k2 = 10
-        # l = 30
-        # l2 = 5
-        # angle_cal = 0.017
-        # angle_cal2 = 0.056
-        # ar_id = None
+        self.k = 2
+        self.l = 30
+        self.angle_cal = 0.017
 
         
 
@@ -59,6 +56,13 @@ class ArTagDriver:
     def distance_from_origin(self, pose):
         """Calculate the Euclidean distance from the origin to the given pose."""
         return math.sqrt(pose.position.x**2 + pose.position.y**2 + pose.position.z**2)
+
+
+    def ar_data(self):
+        (ar_roll, ar_pitch, ar_yaw) = tf.euler_from_quaternion((arData["AX"], arData["AY"], arData["AZ"], arData["AW"]))
+        angle = int(k * np.degrees(arData["DX"] - angle_cal)) - l
+
+        return ar_roll, ar_pitch, ar_yaw, angle, arData["DX"], arData["DZ"]
 
     
 if __name__ == '__main__':
