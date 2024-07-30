@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 
 import rospy
-from std_msgs.msg import String
-from sensor_msgs.msg import Image
+
+from xycar_msgs.msg import xycar_motor  # xycar 모터 메시지 모듈 임포트
 
 from ar_track_alvar_msgs.msg import AlvarMarkers
 
-from geometry_msgs.msg import Pose
-
 import math
 
-import tf
-
-
+class ArTag:
+    def __init__(self, marker):
+        self.x = marker.pose.pose.position.x
+        self.y = marker.pose.pose.position.y
+        self.z = marker.pose.pose.position.z
 
 class ArTagDriver:
     def __init__(self):
@@ -20,49 +20,55 @@ class ArTagDriver:
         rospy.Subscriber("ar_pose_marker", AlvarMarkers, self.arCB, queue_size= 1)
 
 
-        self.rate = rospy.Rate(10)  # 10hz
+        self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor_ar', xycar_motor, queue_size=1)
+
+        self.rate = rospy.Rate(30)  # 30hz
+
+        self.ctrl_cmd_msg_ar = xycar_motor()
 
         # for ar tag
         self.sorted_ar_list = []
-        self.arData = {"DX":0.0, "DY":0.0, "DZ":0.0, "AX":0.0, "AY":0.0, "AZ":0.0, "AW":0.0}
         self.k = 2
         self.l = 30
         self.angle_cal = 0.017
 
-        
+        self.speed = 0
+        self.flag = False
+
 
     def run(self):
         while not rospy.is_shutdown():
-            hello_str = "hello world %s" % rospy.get_time()
-            rospy.loginfo(hello_str)
-            self.pub.publish(hello_str)
+            print('AR Tag self.angle: ', self.angle)
+            self.speed = 4
+            self.publishCtrlCmd(self.speed, self.angle, self.flag)
             self.rate.sleep()
 
-    # for ar tag
+    def publishCtrlCmd(self, motor_msg, servo_msg, flag):
+        self.ctrl_cmd_msg_ar.speed = motor_msg  # 모터 속도 설정
+        self.ctrl_cmd_msg_ar.angle = servo_msg  # 조향각 설정
+        self.ctrl_cmd_msg_ar.flag = flag
+        self.ctrl_cmd_pub.publish(self.ctrl_cmd_msg_ar)  # 명령 퍼블리시
 
     def arCB(self, msg):
         if not msg.markers:
-            rospy.loginfo("No markers detected.")
+            self.flag = False
             return
 
+        self.flag = True
         # Calculate distances and sort markers by distance
         self.sorted_ar_list = []
         for marker in msg.markers:
-            dist = self.distance_from_origin(marker.pose.pose)
-            self.sorted_ar_list.append((dist, marker))
+            self.sorted_ar_list.append(ArTag(marker))
 
-        self.sorted_ar_list.sort(key=lambda x: x[0])
+        # 처음에는 distance를 position.x, y, z를 통해 구해야 한다고 생각했었는데, just position.z값 만으로 정렬
+        self.sorted_ar_list.sort(key=lambda x: x.z)
 
-    def distance_from_origin(self, pose):
-        """Calculate the Euclidean distance from the origin to the given pose."""
-        return math.sqrt(pose.position.x**2 + pose.position.y**2 + pose.position.z**2)
+        # 가장 가까운 ar tag 
+        closest_ar = self.sorted_ar_list[0]
+
+        self.angle =  int(self.k * math.degrees(closest_ar.x - self.angle_cal)) - self.l
 
 
-    def ar_data(self):
-        (ar_roll, ar_pitch, ar_yaw) = tf.euler_from_quaternion((arData["AX"], arData["AY"], arData["AZ"], arData["AW"]))
-        angle = int(k * np.degrees(arData["DX"] - angle_cal)) - l
-
-        return ar_roll, ar_pitch, ar_yaw, angle, arData["DX"], arData["DZ"]
 
     
 if __name__ == '__main__':
