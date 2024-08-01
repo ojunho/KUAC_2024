@@ -1,0 +1,10 @@
+<launch>
+  <!-- 정적 장애물 라이다 기반 Clustering 및 주행 로직 진행 -->
+  <include file="$(find obstacle_detector)/launch/static_obstacle.launch"/>
+
+  <!-- 차선 기반 주행  -->
+  <include file="$(find lane_detection)/launch/lane_detection.launch"/>
+  
+  <node name="xycar_planner" pkg="xycar_planner" type="xycar_planner_rubbercone_test.py" output="screen"/>
+  
+</launch>
