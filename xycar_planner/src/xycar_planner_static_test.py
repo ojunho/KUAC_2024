@@ -91,15 +91,19 @@ class XycarPlanner:
 
 
                 # MODE 판별
-
-
+                if self.static_mode_flag == True:
+                    self.motor = self.ctrl_static.speed
+                    self.steer = self.ctrl_static.angle
+                else:
+                    self.motor = self.ctrl_lane.speed
+                    self.steer = self.ctrl_lane.angle
 
                 # MODE에 따른 motor, steer 설정
 
 
 
-                # self.publishCtrlCmd(self.motor, self.steer)
-                print('self.lane_mode_flag', self.lane_mode_flag)
+                self.publishCtrlCmd(self.motor, self.steer)
+                # print('self.lane_mode_flag', self.lane_mode_flag)
 
                 cv2.waitKey(1)  # 키 입력 대기
                 rate.sleep()  # 주기마다 대기

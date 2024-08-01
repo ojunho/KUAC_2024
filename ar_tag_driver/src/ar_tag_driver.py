@@ -34,6 +34,7 @@ class ArTagDriver:
 
         self.speed = 0
         self.flag = False
+        self.angle = 0
 
 
     def run(self):

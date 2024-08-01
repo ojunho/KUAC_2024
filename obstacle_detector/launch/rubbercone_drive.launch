@@ -23,9 +23,10 @@
 
     <param name="min_x_limit" value="0.0"/>
     <param name="max_x_limit" value="2.0"/>
-    <param name="min_y_limit" value="-0.4"/>
-    <param name="max_y_limit" value="0.4"/>
+    <param name="min_y_limit" value="-0.7"/>
+    <param name="max_y_limit" value="1.0"/>
   </node>
-    <node name="rubbercone_drive" pkg="obstacle_detector" type="rubbercone_drive.py" output="screen"/>
+
+  <node name="rubbercone_drive" pkg="obstacle_detector" type="rubbercone_drive.py" output="screen"/>
 
 </launch>
