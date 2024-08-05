@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import rospy
 
@@ -109,6 +109,8 @@ class ArTagDriver:
 
 
             print('AR Tag self.angle: ', self.angle)
+            print('로봇 heading: ', self.heading)
+
             self.speed = 4
             self.publishCtrlCmd(self.speed, self.angle, self.flag)
             self.rate.sleep()
