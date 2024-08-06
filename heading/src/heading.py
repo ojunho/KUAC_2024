@@ -12,24 +12,23 @@ class ImuHeadingCalculator:
         self.init_heading = None
 
         # self.adjust_heading = 136.64  # 필요에 따라 조정값을 설정합니다.
-        self.adjust_heading = 0  # 필요에 따라 조정값을 설정합니다.
 
         self.heading_pub = rospy.Publisher("/heading", Float64, queue_size=1)
         self.imu_sub = rospy.Subscriber("/imu", Imu, self.imuCB)
 
         self.init_flag = False
 
-        rate = rospy.Rate(30)
-        while not rospy.is_shutdown():
-            if (self.init_flag == False) and (self.heading != None):
-                self.init_heading = self.heading
+        # rate = rospy.Rate(30)
+        # while not rospy.is_shutdown():
+        #     if (self.init_flag == False) and (self.heading != None):
+        #         self.init_heading = self.heading
 
-                self.adjust_heading = self.init_heading + 87
-                self.init_flag = True
+        #         self.adjust_heading = self.init_heading + 87
+        #         self.init_flag = True
 
-            print("INITIAL: ", self.init_heading)
-            print("ADJUST : ", self.adjust_heading)
-            rate.sleep()
+        #     print("INITIAL: ", self.init_heading)
+        #     print("ADJUST : ", self.adjust_heading)
+        #     rate.sleep()
 
     def imuCB(self, msg):
         # 쿼터니언을 사용하여 roll, pitch, yaw 계산
@@ -44,15 +43,6 @@ class ImuHeadingCalculator:
         roll, pitch, yaw = euler
 
         self.heading = yaw * 180.0 / math.pi
-
-        # print('BEFORE: ', self.heading)
-        # self.heading += self.adjust_heading
-        # print('AFTER: ', self.heading)
-
-        # if self.heading > 180:
-        #     self.heading -= 360
-        # elif self.heading < -180:
-        #     self.heading += 360
 
         # Heading을 퍼블리시
         heading_msg = Float64()
