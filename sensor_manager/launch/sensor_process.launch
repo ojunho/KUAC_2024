@@ -1,0 +1,7 @@
+<launch>
+    <!-- IMU 기반 heading 계산기 -->
+    <include file="$(find heading)/launch/imu_heading.launch"/>
+
+    <!-- LiDAR 기반 Obstacle -->
+    <include file="$(find obstacle_detector)/launch/obstacle_detector_static.launch"/>
+</launch>

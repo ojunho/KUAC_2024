@@ -46,7 +46,6 @@ class StaticAvoidance():
         self.angle = 0
         self.prev_angle = 0
 
-        self.is_static = False # 
 
         self.steer_right_time = 0
         self.steer_left_time = 0
@@ -83,40 +82,42 @@ class StaticAvoidance():
 
             if self.static_obstacle_cnt < 0:
                 self.static_obstacle_cnt = 0
-            elif self.static_obstacle_cnt > 50:
-                self.static_obstacle_cnt = 50
+            elif self.static_obstacle_cnt > 30:
+                self.static_obstacle_cnt = 30
 
 
             if self.state == 'L':
-                if self.static_obstacle_cnt == 50:
+                if self.static_obstacle_cnt == 30:
                     # gt heading
                     self.gt_heading = self.heading
 
                     # gt heading 음수면 -> heading이 증가하는 방향 -> 왼쪽으로 회피
                     if self.gt_heading < 0:
-                        self.avoid_heading = self.gt_heading + 25
+                        self.avoid_heading = self.gt_heading + 30
                         self.return_heading = self.gt_heading - 15
 
                     # gt heading 양수면 -> heading이 감소하는 방향 -> 오른으로 회피
                     elif self.gt_heading >= 0:
-                        self.avoid_heading = self.gt_heading - 25
+                        self.avoid_heading = self.gt_heading - 30
                         self.return_heading = self.gt_heading + 15
 
                     # flag
                     self.state = 'A'
+                    self.is_static = True
 
             elif self.state == 'A':
                 # gt heading 음수면 -> heading이 증가하는 방향 -> 왼쪽으로 회피
                 if self.gt_heading < 0:
                     if (self.avoid_heading > self.heading): # 목표 heading에 도달하지 못했으면 좌조향
-                        self.angle = -abs(self.heading - self.avoid_heading)
+                        self.angle = -50 * abs(self.heading - self.avoid_heading)
+                        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                     else:
                         self.state = 'R'
 
                 # gt heading 양수면 -> heading이 감소하는 방향 -> 오른으로 회피
                 elif self.gt_heading >= 0:
                     if (self.avoid_heading < self.heading): # 목표 heading에 도달하지 못했으면 우조향
-                        self.angle = abs(self.heading - self.avoid_heading)
+                        self.angle = 50 * abs(self.heading - self.avoid_heading)
                     else:
                         self.state = 'R'
 
@@ -124,24 +125,26 @@ class StaticAvoidance():
                 # gt heading 음수면 -> heading이 증가하는 방향 -> 왼쪽으로 회피 -> 오른쪽으로 return
                 if self.gt_heading < 0:
                     if (self.return_heading < self.heading): # 목표 heading에 도달하지 못했으면 우조향
-                        self.angle = abs(self.heading - self.return_heading)
+                        self.angle = 25 * abs(self.heading - self.return_heading)
                     else:
                         self.state = 'L'
                         self.gt_heading = None
                         self.avoid_heading = None
                         self.return_heading = None
                         self.static_obstacle_cnt = 0
+                        self.is_static = False
 
                 # gt heading 양수면 -> heading이 감소하는 방향 -> 오른으로 회피 -> 왼쪽으로 return
                 elif self.gt_heading >= 0:
                     if (self.return_heading > self.heading): # 목표 heading에 도달하지 못했으면 좌조향
-                        self.angle = -abs(self.heading - self.return_heading)
+                        self.angle = -25 * abs(self.heading - self.return_heading)
                     else:
                         self.state = 'L'
                         self.gt_heading = None
                         self.avoid_heading = None
                         self.return_heading = None
                         self.static_obstacle_cnt = 0
+                        self.is_static = False
             
 
             # 정적 모드를 들어감과 동시에 현재의 heading을 gt heading으로 정하기. 
@@ -150,6 +153,15 @@ class StaticAvoidance():
 
             # 다시 일정 기준 heading을 만족하도록 돌아오게 하기. 
 
+
+            print('STATE: ', self.state)
+            print('CNT  : ', self.static_obstacle_cnt)
+            print('FLAG : ', self.is_static)
+            print('GT   : ', self.gt_heading)
+            print('AVOID: ', self.avoid_heading)
+            print('RETUR: ', self.return_heading)
+            print('HEADI: ', self.heading)
+            print()
 
 
             self.publishCtrlCmd(self.speed, self.angle, self.is_static)

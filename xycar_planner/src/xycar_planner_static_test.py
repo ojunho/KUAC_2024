@@ -27,7 +27,11 @@ import tf
 
 import tkinter as tk
 
-
+class Obstacle:
+    def __init__(self, x=None, y=None, distance=None):
+        self.x = x
+        self.y = y
+        self.distance = distance
 
 def nothing(x):
     pass
@@ -60,8 +64,8 @@ class XycarPlanner:
             # 카메라와 IMU 데이터 구독
             rospy.Subscriber("/xycar_motor_lane", xycar_motor, self.ctrlLaneCB)
             rospy.Subscriber("/xycar_motor_static", xycar_motor, self.ctrlStaticCB)
-            rospy.Subscriber("/xycar_motor_rubbercone", xycar_motor, self.ctrlRubberconeCB)
-            rospy.Subscriber("/xycar_motor_ar", xycar_motor, self.ctrlARCB)
+
+            rospy.Subscriber("/raw_obstacles", Obstacles, self.obstacleCB)
 
             # 모터 제어 명령과 현재 속도 퍼블리셔 설정
             self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor', xycar_motor, queue_size=1)
@@ -86,8 +90,11 @@ class XycarPlanner:
 
             self.pid = PID(0.7, 0.0008, 0.15)
 
+            self.obstacles = []
+
             rate = rospy.Rate(30)  # 루프 주기 설정
             while not rospy.is_shutdown():  # ROS 노드가 종료될 때까지 반복
+
 
 
                 # MODE 판별
@@ -101,6 +108,12 @@ class XycarPlanner:
                 # MODE에 따른 motor, steer 설정
 
 
+                if len(self.obstacles) > 0:
+                    # 특정 roi에 인지가 들어오면 일단 감속
+                    for obstacle in self.obstacles:
+                        if (0 < obstacle.x < 2.0) and (-0.45 <= obstacle.y <= 0.45):
+                            self.motor = 4
+                            print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
                 self.publishCtrlCmd(self.motor, self.steer)
                 # print('self.lane_mode_flag', self.lane_mode_flag)
@@ -127,15 +140,31 @@ class XycarPlanner:
         self.ctrl_static.angle = msg.angle
         self.static_mode_flag = msg.flag
 
-    def ctrlRubberconeCB(self, msg):
-        self.ctrl_rubbercone.speed = msg.speed
-        self.ctrl_rubbercone.angle = msg.angle
-        self.rubbercone_mode_flag = msg.flag
+    def obstacleCB(self, msg):
+        self.obstacles = []
+        for circle in msg.circles:
+            x = circle.center.x
+            y = circle.center.y
+            distance = (x**2 + y**2) ** 0.5  # 유클리드 거리 계산
+            obstacle = Obstacle(x, y, distance)
+            self.obstacles.append(obstacle)
+        
+        self.obstacles.sort(key=lambda obs: obs.distance)
 
-    def ctrlARCB(self, msg):
-        self.ctrl_ar.speed = msg.speed
-        self.ctrl_ar.angle = msg.angle
-        self.ar_mode_flag = msg.flag
+        if len(self.obstacles) > 0:
+            self.closest_obstacle = self.obstacles[0]
+        else:
+            self.closest_obstacle = Obstacle()
+
+    # def ctrlRubberconeCB(self, msg):
+    #     self.ctrl_rubbercone.speed = msg.speed
+    #     self.ctrl_rubbercone.angle = msg.angle
+    #     self.rubbercone_mode_flag = msg.flag
+
+    # def ctrlARCB(self, msg):
+    #     self.ctrl_ar.speed = msg.speed
+    #     self.ctrl_ar.angle = msg.angle
+    #     self.ar_mode_flag = msg.flag
 
 
 

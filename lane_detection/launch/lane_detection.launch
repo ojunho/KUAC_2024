@@ -1,8 +1,3 @@
 <launch>
-  <!-- IMU 기반 heading 계산기 -->
-  <include file="$(find heading)/launch/imu_heading.launch"/>
-  
-  <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d /home/default0715.rviz" /> -->
   <node name="lane_detection" pkg="lane_detection" type="lane_detection.py" output="screen"/>
-  
 </launch>

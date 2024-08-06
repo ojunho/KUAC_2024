@@ -51,8 +51,8 @@ class LaneDetection(object):
             rospy.Subscriber("/usb_cam/image_raw", Image, self.cameraCB)
 
             # 모터 제어 명령과 현재 속도 퍼블리셔 설정
-            # self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor_lane', xycar_motor, queue_size=1)
-            self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor', xycar_motor, queue_size=1)
+            self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor_lane', xycar_motor, queue_size=1)
+            # self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor', xycar_motor, queue_size=1)
             
             self.bridge = CvBridge()  # CV-Bridge 초기화
             self.ctrl_cmd_msg = xycar_motor()  # 모터 제어 메시지 초기화
@@ -60,7 +60,7 @@ class LaneDetection(object):
             self.slidewindow = SlideWindow()  # 슬라이드 윈도우 알고리즘 초기화
             
             self.steer = 0.0  # 조향각 초기화
-            self.motor = 25.0  # 모터 속도 초기화
+            self.motor = 0.0  # 모터 속도 초기화
             
             # self.pid = PID(0.15, 0.0003, 0.325)  # PID 제어기 초기화
    
@@ -120,8 +120,6 @@ class LaneDetection(object):
 
 if __name__ == '__main__':
     try:
-        import time
-        time.sleep(10)
         autopilot_control = LaneDetection()  # AutopilotControl 객체 생성
     except rospy.ROSInterruptException:
         pass  # 예외 발생 시 무시하고 종료
