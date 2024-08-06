@@ -36,10 +36,10 @@ class TrafficDetection:
             cv2.createTrackbar('V_max_red1', 'Red Trackbars', 240, 255, self.nothing)
             
             cv2.namedWindow('Green Trackbars')
-            cv2.createTrackbar('H_min_green1', 'Green Trackbars', 78, 179, self.nothing)
+            cv2.createTrackbar('H_min_green1', 'Green Trackbars', 68, 179, self.nothing)
             cv2.createTrackbar('H_max_green1', 'Green Trackbars', 91, 179, self.nothing)
             cv2.createTrackbar('S_min_green1', 'Green Trackbars', 0, 255, self.nothing)
-            cv2.createTrackbar('S_max_green1', 'Green Trackbars', 141, 255, self.nothing)
+            cv2.createTrackbar('S_max_green1', 'Green Trackbars', 180, 255, self.nothing)
             cv2.createTrackbar('V_min_green1', 'Green Trackbars', 218, 255, self.nothing)
             cv2.createTrackbar('V_max_green1', 'Green Trackbars', 255, 255, self.nothing)
 

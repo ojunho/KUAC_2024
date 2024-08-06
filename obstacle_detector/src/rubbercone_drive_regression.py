@@ -27,7 +27,7 @@ class Rabacon_drive:
     def Rabacon(self, data):
         tuned_data = []
         for i in data.circles:
-            if math.sqrt((i.center.x) ** 2 +  (i.center.y) ** 2) >= 0.9:
+            if math.sqrt((i.center.x) ** 2 +  (i.center.y) ** 2) >= 0.8:
                 continue
             tuned_data.append([i.center.x, i.center.y])
         tuned_data = np.array(tuned_data)    
@@ -37,7 +37,7 @@ class Rabacon_drive:
 
         group1 = tuned_data[labels == 0]
         group2 = tuned_data[labels == 1]
-
+        print("Length:", len(group1), len(group2), end=" ")
         # 각 그룹의 각도 계산
         if len(group1) > 1:  # 최소 2개 이상의 점이 있어야 각도 계산 가능
             angle_group1 = self.calculate_angle(group1)
@@ -56,7 +56,11 @@ class Rabacon_drive:
 
         if angle_group1 is not None and angle_group2 is not None:
             angle = (angle_group1 + angle_group2) // 2
-            self.angle = -0.7 * angle
+            self.angle = -0.8 * angle
+        elif angle_group1 is not None:
+            self.angle = -0.8 * angle_group1
+        elif angle_group2 is not None:
+            self.angle = -0.8 * angle_group2
         else:
             self.angle = None
 
@@ -151,11 +155,11 @@ class Rabacon_drive:
         return filtered_cones
 
 
-    def drive(self, angle, speed):
+    def drive(self, angle, speed=4):
         global motor
         motor_msg = xycar_motor()
-        motor_msg.angle = round(angle )
-        motor_msg.speed = 4
+        motor_msg.angle = round(angle)
+        motor_msg.speed = round(speed)
         motor.publish(motor_msg)
 
 
@@ -178,7 +182,7 @@ class Rabacon_drive:
             print("angle:", angle_to_drive)
             speed = 4
             self.drive(angle_to_drive, speed)  
-            sleep(0.1)  
+            sleep(0.05)  
 
 if __name__ == '__main__':
     rabacon = Rabacon_drive()

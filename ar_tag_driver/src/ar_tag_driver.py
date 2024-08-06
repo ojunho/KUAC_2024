@@ -20,7 +20,6 @@ class ArTagDriver:
     def __init__(self):
         rospy.init_node('ar_tag_driver_node', anonymous=True)
         rospy.Subscriber("ar_pose_marker", AlvarMarkers, self.arCB, queue_size= 1)
-        rospy.Subscriber('/heading', Float64, self.headingCB, queue_size= 1)
         rospy.Subscriber('/traffic_light', Int64MultiArray, self.trafficCB, queue_size= 1)
 
         rospy.Subscriber('/red_center', Int64MultiArray, self.red_centers_CB, queue_size= 1)
@@ -28,7 +27,9 @@ class ArTagDriver:
 
 
 
-        self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor_ar', xycar_motor, queue_size=1)
+        # self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor_ar', xycar_motor, queue_size=1)
+        self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor', xycar_motor, queue_size=1)
+
 
         self.rate = rospy.Rate(30)  # 30hz
 
@@ -52,7 +53,7 @@ class ArTagDriver:
         self.flag = True
         self.angle = 0
 
-        self.heading = 0.0
+        self.heading = None
 
         self.is_traffic_passed = False
 
@@ -65,7 +66,7 @@ class ArTagDriver:
         self.ar_z_threshold = 6.0 # 일정 거리 이내의 ar 태그만 인식하게 하기 위함.
 
 
-        self.stop_distance = 2.2
+        self.stop_distance = 2.5
 
         self.is_stopped = False
 
@@ -117,10 +118,10 @@ class ArTagDriver:
                         print("******************************************************")
 
 
-                # 태그가 인식되지 않으면 heading 값을 통해 이동
+                # 태그가 인식되지 않으면 그냥 좌조향
                 elif len(self.sorted_ar_list) == 0: 
                     print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-                    self.angle = -(self.ar_heading_threshold - self.heading)
+                    self.angle = -20
 
 
 
@@ -129,10 +130,10 @@ class ArTagDriver:
             elif self.is_traffic_passed == True:
 
                 # 신호등 보고 따라가기
-                if len(self.red_centers) > 0:
-                    self.angle = int(math.degrees(self.k_traffic * (self.red_centers[0] + self.angle_cal_traffic - 320)))
-                    print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                elif len(self.green_centers) > 0:
+                # if len(self.red_centers) > 0: # -> red  no
+                #     self.angle = int(math.degrees(self.k_traffic * (self.red_centers[0] + self.angle_cal_traffic - 320)))
+                #     print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                if len(self.green_centers) > 0:
                     self.angle = int(math.degrees(self.k_traffic * (self.green_centers[0] - 33 - 320)))
                     print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
@@ -140,20 +141,17 @@ class ArTagDriver:
                     # ar 태그를 추종하며 따라가기
                     if len(self.sorted_ar_list) > 0:
                         print("******************************************************")
-                        self.angle = int(math.degrees(10 * (self.closest_ar.x - self.angle_cal_x) / (self.closest_ar.z)))
+                        self.angle = int(math.degrees(17.5 * (self.closest_ar.x - 0.2) / (self.closest_ar.z)))
 
-                    # 태그가 인식되지 않으면 heading 값을 통해 이동
                     elif len(self.sorted_ar_list) == 0: 
-                        if (self.heading <= -170) or (self.heading >= 170):
-
-                            self.flag = False
+                        #     self.flag = False
                         print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 
-                        self.angle = -(self.ar_heading_threshold - self.heading)
+                        self.angle = -5
 
 
 
-            self.speed = 4
+            self.speed = 6
             self.publishCtrlCmd(self.speed, self.angle, self.flag)
             print('')
 
@@ -192,8 +190,8 @@ class ArTagDriver:
             self.closest_ar = None
 
 
-    def headingCB(self, msg):
-        self.heading = msg.data
+    # def headingCB(self, msg):
+    #     self.heading = msg.data
 
     def trafficCB(self, msg):
         self.red_light_count = msg.data[0]
