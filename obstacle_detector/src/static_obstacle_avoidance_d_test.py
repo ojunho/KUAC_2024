@@ -133,17 +133,11 @@ class StaticAvoidance():
                     #     self.state = 'R'
                     if self.heading * self.avoid_heading > 0:
                         self.angle = 10 * (self.heading - self.avoid_heading)
-                        print('111111111111111111111111111111')
-                        if self.heading < self.avoid_heading and self.next_level == 0:
+                        if self.heading < self.avoid_heading:
                             self.stat = 'R'
                     else:
-                        self.angle = 10 * (-self.heading - self.avoid_heading)
-                        print('222222222222222222222222222222')
-                        self.next_level = 1  
-                    if self.heading * self.avoid_heading > 0 and self.next_level == 1:
-                        self.angle = 10 * (self.heading - self.avoid_heading)
-                        print('333333333333333333333333333333')    
-                        if self.heading < self.avoid_heading:
+                        self.angle = -5
+                        if self.heading * self.avoid_heading > 0:
                             self.state = 'R'
 
             elif self.state == 'R':
