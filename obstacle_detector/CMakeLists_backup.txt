@@ -1,20 +1,18 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(obstacle_detector)
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -fpermissive ${CMAKE_CXX_FLAGS} -Wfatal-errors")
+set(CMAKE_CXX_FLAGS "-std=c++11 -fpermissive ${CMAKE_CXX_FLAGS} -Wfatal-errors\ ")
 
 find_package(catkin REQUIRED COMPONENTS roscpp roslaunch nodelet rviz std_msgs std_srvs geometry_msgs sensor_msgs tf laser_geometry message_generation)
 find_package(Armadillo REQUIRED)
 find_package(Boost 1.54.0 REQUIRED system)
-find_package(BLAS REQUIRED)
-find_package(LAPACK REQUIRED)
 
 add_message_files(FILES CircleObstacle.msg SegmentObstacle.msg Obstacles.msg)
 generate_messages(DEPENDENCIES std_msgs geometry_msgs)
 
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES scans_merger obstacle_extractor obstacle_tracker obstacle_publisher obstacle_extractor_rubbercone obstacle_extractor_static ${PROJECT_NAME}_nodelets ${PROJECT_NAME}_gui
+  LIBRARIES scans_merger obstacle_extractor obstacle_tracker obstacle_publisher ${PROJECT_NAME}_nodelets ${PROJECT_NAME}_gui
   CATKIN_DEPENDS roscpp nodelet rviz std_msgs std_srvs geometry_msgs sensor_msgs tf laser_geometry message_runtime
 )
 
@@ -28,24 +26,16 @@ target_link_libraries(scans_merger ${catkin_LIBRARIES})
 add_dependencies(scans_merger ${catkin_EXPORTED_TARGETS})
 
 add_library(obstacle_extractor src/obstacle_extractor.cpp)
-target_link_libraries(obstacle_extractor ${catkin_LIBRARIES} ${ARMADILLO_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+target_link_libraries(obstacle_extractor ${catkin_LIBRARIES} ${ARMADILLO_LIBRARIES})
 add_dependencies(obstacle_extractor ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 add_library(obstacle_tracker src/obstacle_tracker.cpp)
-target_link_libraries(obstacle_tracker ${catkin_LIBRARIES} ${ARMADILLO_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+target_link_libraries(obstacle_tracker ${catkin_LIBRARIES} ${ARMADILLO_LIBRARIES})
 add_dependencies(obstacle_tracker ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 add_library(obstacle_publisher src/obstacle_publisher.cpp)
 target_link_libraries(obstacle_publisher ${catkin_LIBRARIES})
 add_dependencies(obstacle_publisher ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
-
-add_library(obstacle_extractor_rubbercone src/obstacle_extractor_rubbercone.cpp)
-target_link_libraries(obstacle_extractor_rubbercone ${catkin_LIBRARIES} ${ARMADILLO_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-add_dependencies(obstacle_extractor_rubbercone ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
-
-add_library(obstacle_extractor_static src/obstacle_extractor_static.cpp)
-target_link_libraries(obstacle_extractor_static ${catkin_LIBRARIES} ${ARMADILLO_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-add_dependencies(obstacle_extractor_static ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 #
 # Build nodes
@@ -61,12 +51,6 @@ target_link_libraries(obstacle_tracker_node obstacle_tracker)
 
 add_executable(obstacle_publisher_node src/nodes/obstacle_publisher_node.cpp)
 target_link_libraries(obstacle_publisher_node obstacle_publisher)
-
-add_executable(obstacle_extractor_rubbercone_node src/nodes/obstacle_extractor_rubbercone_node.cpp)
-target_link_libraries(obstacle_extractor_rubbercone_node obstacle_extractor_rubbercone ${ARMADILLO_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-
-add_executable(obstacle_extractor_static_node src/nodes/obstacle_extractor_static_node.cpp)
-target_link_libraries(obstacle_extractor_static_node obstacle_extractor_static ${ARMADILLO_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
 #
 # Build nodelets
@@ -118,7 +102,7 @@ install(TARGETS scans_merger obstacle_extractor obstacle_tracker obstacle_publis
 #
 # Install nodes
 #
-install(TARGETS scans_merger_node obstacle_extractor_node obstacle_tracker_node obstacle_publisher_node obstacle_extractor_rubbercone_node obstacle_extractor_static_node
+install(TARGETS scans_merger_node obstacle_extractor_node obstacle_tracker_node obstacle_publisher_node
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 #

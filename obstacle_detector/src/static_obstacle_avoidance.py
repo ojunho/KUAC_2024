@@ -3,8 +3,7 @@
 
 import rospy
 from obstacle_detector.msg import Obstacles
-from std_msgs.msg import Int32
-from std_msgs.msg import Int32MultiArray
+from std_msgs.msg import Int32, Float64, Int32MultiArray
 from xycar_msgs.msg import xycar_motor
 import math
 import time
@@ -19,18 +18,22 @@ class Obstacle:
 class StaticAvoidance():
     def __init__(self):
         rospy.Subscriber("/raw_obstacles", Obstacles, self.obstacleCB)
-        rospy.Subscriber("/xycar_ultrasonic", Int32MultiArray, self.ultrasonicCB)
+        rospy.Subscriber("/heading", Float64, self.headingCB)
 
-        # self.state -> 차량이 피해야 하는 방향
-        # C: Center 
-        # R: Right 
-        # L: Left 
-        self.state = 'C'
+
+        self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor_static', xycar_motor, queue_size=1)
+        self.ctrl_cmd_msg = xycar_motor()
+
+        # self.state
+        # L: Lane
+        # A: Avoid
+        # R: Return
+        self.state = 'L'
+
         self.obstacles = []
-        self.ultrasonic = [] # 왼쪽, 오른쪽, 오른쪽뒤, 뒤, 왼쪽뒤
         self.is_static = False
         self.steer = 0
-        self.speed = 10
+        self.speed = 0
         self.is_left = False
 
         self.closest_obstacle = Obstacle()
@@ -43,86 +46,144 @@ class StaticAvoidance():
         self.angle = 0
         self.prev_angle = 0
 
-        self.is_static = False # 
 
         self.steer_right_time = 0
         self.steer_left_time = 0
         self.final_adjust_time = 0
 
-        self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor_static', xycar_motor, queue_size=1)
-        self.ctrl_cmd_msg = xycar_motor()
+
+        self.static_obstacle_cnt = 0
+
+        self.real_heading = None
+        self.gt_heading = None
+
+        self.avoid_heading = None
+        self.return_heading = None
+
+        self.local_heading = None
+
+        self.last_n_obstacles_y = []
+        self.len_last_n_obstacles_y = 5
+        self.avg_y = None
+
+        
 
         rate = rospy.Rate(30)
         while not rospy.is_shutdown():
 
 
-            # 몇개가 나올지도 모르고, 어떻게 나올지도 모름. 
-            # 1. 장애물의 위치 고려 
             if len(self.obstacles) > 0:
-                self.closest_obstacle = self.obstacles[0]
-
-                if (self.closest_obstacle.distance <= self.distance_threshold) and (self.is_static == False):
-                    self.is_static = True
-                    if self.closest_obstacle.y > 0:
-                        self.state = 'R'
-                    else:
-                        self.state = 'L'
+                # 특정 roi에 인지가 들어오면 일단 감속
+                for obstacle in self.obstacles:
+                    if (0 < obstacle.x < 2.0) and (-0.45 <= obstacle.y <= 0.45):
+                        self.speed = 4
                     
+                    if (0 < obstacle.x < 1.0) and (-0.25 <= obstacle.y <= 0.25):
+                        self.static_obstacle_cnt += 1
+                        self.update_last_n_obstacles_y(obstacle.y, self.len_last_n_obstacles_y)
+                    else:
+                        self.static_obstacle_cnt -= 1
+            else:
+                self.static_obstacle_cnt -= 1
+
+            # 완전히 차선 폭에 들어오는 장애물이 몇번 연속으로 찍힌다? cnt++ -> 특정 숫자 이상이면 그러면 아예 정적 모드
+            # 하지만 계속 안들어오면 비례하게 cnt--
+
+            if self.static_obstacle_cnt < 0:
+                self.static_obstacle_cnt = 0
+            elif self.static_obstacle_cnt > 15:
+                self.static_obstacle_cnt = 15
 
 
-            if self.is_static == True:
-                
-                if len(self.obstacles) > 0:
+            if self.state == 'L':
+                if self.static_obstacle_cnt == 15:
 
-                    self.closest_obstacle = self.obstacles[0]
+                    self.avg_y = sum(self.last_n_obstacles_y) / len(self.last_n_obstacles_y)
+                    print('self.avg_y: ', self.avg_y)
 
+                    # gt heading
+                    self.gt_heading = self.real_heading
 
+                    # 장애물의 위치가 중간 or 오른쪽 -> 왼쪽으로 회피
+                    if self.avg_y < 0.15: # -> 장애물의 위치 기반 방향 선택
+                        self.avoid_heading = 37.5
+                        self.return_heading = -20
 
-                    if self.state == 'R':
-                        if (self.closest_obstacle.y > 0) and (self.closest_obstacle.distance < self.distance_threshold_max):
-                            # self.angle = -100 * (self.closest_obstacle.distance - self.distance_threshold)
-                            if (self.closest_obstacle.y - self.margin_y) > 0:
-                                self.angle = -1000 * (self.closest_obstacle.y - self.margin_y)
-                            else: 
-                                self.angle = -100 * (self.closest_obstacle.y - self.margin_y)
-                                
+                    # 장애물의 위치가 왼쪽 -> 오른쪽으로 회피 
+                    else:
+                        self.avoid_heading = -20
+                        self.return_heading = 5
+
+                    # flag
+                    self.state = 'A'
+                    self.is_static = True
+
+            elif self.state == 'A':
+                if self.local_heading != None:
+
+                    # 장애물의 위치가 중간 or 오른쪽 -> 왼쪽으로 회피
+                    if self.avg_y < 0.15: # -> 장애물의 위치 기반 방향 선택
+                        if (self.avoid_heading > self.local_heading): # 목표 heading에 도달하지 못했으면 좌조향
+                            self.angle = -15 * abs(self.local_heading - self.avoid_heading)
+                            print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                         else:
-                            self.angle = self.prev_angle
-                    elif self.state == 'L':
-                        if (self.closest_obstacle.y < 0) and (self.closest_obstacle.distance < self.distance_threshold_max):
-                            self.angle = -100 * (self.closest_obstacle.y + self.margin_y)
+                            self.state = 'R'
+
+                    # 장애물의 위치가 왼쪽 -> 오른쪽으로 회피 
+                    else :
+                        if (self.avoid_heading < self.local_heading): # 목표 heading에 도달하지 못했으면 우조향
+                            self.angle = 10 * abs(self.local_heading - self.avoid_heading)
                         else:
-                            self.angle = self.prev_angle   
+                            self.state = 'R'
 
-                else: 
-                    self.angle = self.prev_angle
+            elif self.state == 'R':
 
-            self.prev_angle = self.angle
+                if self.local_heading != None:
+                    
+                    # 장애물의 위치가 중간 or 오른쪽 -> 왼쪽으로 회피 -> 오른쪽 복귀
+                    if self.avg_y < 0.15: # -> 장애물의 위치 기반 방향 선택
 
-            print('self.state', self.state)
-            print('self.angle', self.angle)
+                        if (self.return_heading < self.local_heading): # 목표 heading에 도달하지 못했으면 우조향
+                            self.angle = 10 * abs(self.local_heading - self.return_heading)
+                        else:
+                            self.state = 'L'
+                            self.gt_heading = None
+                            self.avoid_heading = None
+                            self.return_heading = None
+                            self.static_obstacle_cnt = 0
+                            self.is_static = False
 
-            # print('self.closest_obstacle', self.closest_obstacle.distance)
-            print('self.closest_obstacle.y:', self.closest_obstacle.y)
-            print(" ")
+                    # 장애물의 위치가 왼쪽 -> 오른쪽으로 회피 -> 왼쪽 복귀
+                    else:
+                        if (self.return_heading > self.local_heading): # 목표 heading에 도달하지 못했으면 좌조향
+                            self.angle = -3 * abs(self.local_heading - self.return_heading)
+                        else:
+                            self.state = 'L'
+                            self.gt_heading = None
+                            self.avoid_heading = None
+                            self.return_heading = None
+                            self.static_obstacle_cnt = 0
+                            self.is_static = False
             
 
-
-                
-
-
-            # 2. 라이다를 통해서 우선 피한채로 유지 [1. 거리 기반  2. 각도 기반]
-
-            # 3. 초음파 센서를 통해 상태 유지
-
-            # 4. 다시 복귀 
-
-
-
-
+            # 정적 모드를 들어감과 동시에 현재의 heading을 gt heading으로 정하기. 
             
+            # 일정 기준 heading을 달성할 때 까지 오른쪽으로 쭉 가기 
 
-            self.publishCtrlCmd(4, self.angle, self.is_static)
+            # 다시 일정 기준 heading을 만족하도록 돌아오게 하기. 
+
+
+            # print('STATE: ', self.state)
+            # print('CNT  : ', self.static_obstacle_cnt)
+            # print('FLAG : ', self.is_static)
+            # print('GT   : ', self.gt_heading)
+            # print('AVOID: ', self.avoid_heading)
+            # print('RETUR: ', self.return_heading)
+            # print('HEADI: ', self.local_heading)
+            # print()
+
+
+            self.publishCtrlCmd(self.speed, self.angle, self.is_static)
 
 
             # self.static_pub.publish(self.steer)
@@ -145,12 +206,22 @@ class StaticAvoidance():
         else:
             self.closest_obstacle = Obstacle()
 
-    def ultrasonicCB(self, msg):
-        ultrasonic = list(msg.data)
-        ultrasonic.pop(1)
-        ultrasonic.pop(1)
-        ultrasonic.pop(1)
-        self.ultrasonic = ultrasonic
+    def headingCB(self, msg):
+        self.real_heading = msg.data
+        if self.gt_heading != None:
+            self.local_heading = self.real_heading - self.gt_heading
+            if self.local_heading > 180:
+                self.local_heading -= 360
+            elif self.local_heading < -180:
+                self.local_heading += 360
+        else:
+            self.local_heading = None
+
+
+    def update_last_n_obstacles_y(self, y, n):
+        self.last_n_obstacles_y.append(y)
+        if len(self.last_n_obstacles_y) > n:
+            self.last_n_obstacles_y.pop(0)
 
     def publishCtrlCmd(self, motor_msg, servo_msg, flag):
         self.ctrl_cmd_msg.speed = round(motor_msg)  # 모터 속도 설정

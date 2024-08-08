@@ -1,6 +1,6 @@
 <!-- Reusable launch file for obstacle detection -->
 <launch>
-  <node name="obstacle_extractor" pkg="obstacle_detector" type="obstacle_extractor_node">
+  <node name="obstacle_extractor_static" pkg="obstacle_detector" type="obstacle_extractor_static_node">
     <param name="active"               value="true"/>
     <param name="use_scan"             value="true"/>
     <param name="use_pcl"              value="false"/>
