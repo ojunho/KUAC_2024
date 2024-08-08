@@ -20,7 +20,7 @@ motor = None
 
 class Rabacon_drive:
     def __init__(self):
-        rospy.Subscriber("raw_obstacles", Obstacles, self.Rabacon)
+        rospy.Subscriber("raw_obstacles_rubbercone", Obstacles, self.Rabacon)
         self.angle = 0.0
         self.previous_midpoint = None
 

@@ -18,7 +18,7 @@ class Obstacle:
 
 class StaticAvoidance():
     def __init__(self):
-        rospy.Subscriber("/raw_obstacles", Obstacles, self.obstacleCB)
+        rospy.Subscriber("/raw_obstacles_static", Obstacles, self.obstacleCB)
         rospy.Subscriber("/xycar_ultrasonic", Int32MultiArray, self.ultrasonicCB)
 
         # self.state -> 차량이 피해야 하는 방향

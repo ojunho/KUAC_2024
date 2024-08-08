@@ -34,7 +34,7 @@ class WaypointMaker:
         self.leftPivot = self.reset_pivot("LEFT")
         self.rightPivot = self.reset_pivot("RIGHT")
         
-        rospy.Subscriber("raw_obstacles", Obstacles, self.update_objects)
+        rospy.Subscriber("raw_obstacles_rubbercone", Obstacles, self.update_objects)
         self.maker_pub = rospy.Publisher('visualization_marker', Marker, queue_size=500)
 
     def reset_pivot(self, left="LEFT"):

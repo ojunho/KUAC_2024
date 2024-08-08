@@ -6,7 +6,7 @@ from xycar_msgs.msg import xycar_motor  # xycar 모터 메시지 모듈 임포�
 
 from ar_track_alvar_msgs.msg import AlvarMarkers
 
-from std_msgs.msg import Float64, Int64MultiArray
+from std_msgs.msg import Int64MultiArray
 
 import math
 
@@ -25,11 +25,7 @@ class ArTagDriver:
         rospy.Subscriber('/red_center', Int64MultiArray, self.red_centers_CB, queue_size= 1)
         rospy.Subscriber('/green_center', Int64MultiArray, self.green_centers_CB, queue_size= 1)
 
-
-
-        # self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor_ar', xycar_motor, queue_size=1)
-        self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor', xycar_motor, queue_size=1)
-
+        self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor_ar', xycar_motor, queue_size=1)
 
         self.rate = rospy.Rate(30)  # 30hz
 
@@ -87,7 +83,7 @@ class ArTagDriver:
             if (self.is_stopped == True) and (self.traffic_light == 'Green'):
                 self.is_traffic_passed = True
 
-            # 신호등 통과 전
+            # ------------------------------------------- 신호등 통과 전 ------------------------------------------- #
             if self.is_traffic_passed == False:
 
                 # 신호등 아직 안지났는데 한번이라도 멈춤 플래그 세워졌으면 그냥 정지해있기.
@@ -107,54 +103,40 @@ class ArTagDriver:
                     # 신호등 보고 따라가기
                     if len(self.red_centers) > 0:
                         self.angle = int(math.degrees(self.k_traffic * (self.red_centers[0] + self.angle_cal_traffic - 320)))
-                        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                     elif len(self.green_centers) > 0:
                         self.angle = int(math.degrees(self.k_traffic * (self.green_centers[0] - 33 - 320)))
-                        print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
                     # ar 태그 보며 따라가는 기준
                     else:
                         self.angle = int(math.degrees(5 * (self.closest_ar.x + 0.025) / (self.closest_ar.z)))
-                        print("******************************************************")
 
 
                 # 태그가 인식되지 않으면 그냥 좌조향
                 elif len(self.sorted_ar_list) == 0: 
-                    print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
                     self.angle = -20
+            # ------------------------------------------- 신호등 통과 전 ------------------------------------------- #
 
 
 
-            ############ 신호등을 기점으로 차이를 두기 ############## 
-
+            # ------------------------------------------- 신호등 통과 이후 ------------------------------------------- #
             elif self.is_traffic_passed == True:
-
-                # 신호등 보고 따라가기
-                # if len(self.red_centers) > 0: # -> red  no
-                #     self.angle = int(math.degrees(self.k_traffic * (self.red_centers[0] + self.angle_cal_traffic - 320)))
-                #     print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                 if len(self.green_centers) > 0:
                     self.angle = int(math.degrees(self.k_traffic * (self.green_centers[0] - 33 - 320)))
-                    print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
                 else:
                     # ar 태그를 추종하며 따라가기
                     if len(self.sorted_ar_list) > 0:
-                        print("******************************************************")
                         self.angle = int(math.degrees(17.5 * (self.closest_ar.x - 0.2) / (self.closest_ar.z)))
 
                     elif len(self.sorted_ar_list) == 0: 
-                        #     self.flag = False
-                        print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 
                         self.angle = -5
+            # ------------------------------------------- 신호등 통과 이후 ------------------------------------------- #
 
 
 
             self.speed = 6
             self.publishCtrlCmd(self.speed, self.angle, self.flag)
-            print('')
-
 
             self.rate.sleep()
 
@@ -189,10 +171,6 @@ class ArTagDriver:
         else:
             self.closest_ar = None
 
-
-    # def headingCB(self, msg):
-    #     self.heading = msg.data
-
     def trafficCB(self, msg):
         self.red_light_count = msg.data[0]
         self.green_light_count = msg.data[1]
@@ -207,10 +185,6 @@ class ArTagDriver:
 
     def green_centers_CB(self, msg):
         self.green_centers = msg.data
-    
-
-
-
     
 if __name__ == '__main__':
     try:

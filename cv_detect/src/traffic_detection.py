@@ -1,113 +1,176 @@
 #!/usr/bin/env python3
 
-# 기본 Python3 인터프리터 설정
-
 from __future__ import print_function
-
-from math import radians, pi  # 각도를 라디안으로 변환하는 함수 임포트
-
-import cv2  # OpenCV 라이브러리 임포트
-
-from cv_bridge import CvBridge, CvBridgeError  # CV-Bridge 라이브러리 임포트
-
-import rospy  # ROS 파이썬 라이브러리 임포트
-from sensor_msgs.msg import Image  # 이미지 데이터 메시지 모듈 임포트
+from math import radians, pi
+import cv2
+from cv_bridge import CvBridge, CvBridgeError
+import rospy
+from sensor_msgs.msg import Image
+import numpy as np
 from utils import *
+
+from std_msgs.msg import Int64MultiArray
 
 class TrafficDetection:
     def __init__(self):
-        rospy.init_node('traffic_detection', anonymous=True)  # ROS 노드 초기화
-        
+        rospy.init_node('traffic_detection', anonymous=True)
+
         try:
-            # 카메라와 IMU 데이터 구독
+            self.bridge = CvBridge()
+
             rospy.Subscriber("/usb_cam/image_raw", Image, self.cameraCB)
+            self.traffic_light_pub = rospy.Publisher("/traffic_light", Int64MultiArray, queue_size=1)
+            self.red_center_pub = rospy.Publisher("/red_center", Int64MultiArray, queue_size=1)
+            self.green_center_pub = rospy.Publisher("/green_center", Int64MultiArray, queue_size=1)
 
 
+            self.cv_image = None
 
-            self.bridge = CvBridge()  # CV-Bridge 초기화
+            # 트랙바 윈도우 생성
+            cv2.namedWindow('Red Trackbars')
+            cv2.createTrackbar('H_min_red1', 'Red Trackbars', 0, 179, self.nothing)
+            cv2.createTrackbar('H_max_red1', 'Red Trackbars', 179, 179, self.nothing)
+            cv2.createTrackbar('S_min_red1', 'Red Trackbars', 0, 255, self.nothing)
+            cv2.createTrackbar('S_max_red1', 'Red Trackbars', 10, 255, self.nothing)
+            cv2.createTrackbar('V_min_red1', 'Red Trackbars', 180, 255, self.nothing)
+            cv2.createTrackbar('V_max_red1', 'Red Trackbars', 240, 255, self.nothing)
+            
+            cv2.namedWindow('Green Trackbars')
+            cv2.createTrackbar('H_min_green1', 'Green Trackbars', 68, 179, self.nothing)
+            cv2.createTrackbar('H_max_green1', 'Green Trackbars', 91, 179, self.nothing)
+            cv2.createTrackbar('S_min_green1', 'Green Trackbars', 0, 255, self.nothing)
+            cv2.createTrackbar('S_max_green1', 'Green Trackbars', 180, 255, self.nothing)
+            cv2.createTrackbar('V_min_green1', 'Green Trackbars', 218, 255, self.nothing)
+            cv2.createTrackbar('V_max_green1', 'Green Trackbars', 255, 255, self.nothing)
 
-            self.cv_image = None  # 카메라 이미지 초기화
+            rate = rospy.Rate(30)
+            while not rospy.is_shutdown():
+                if self.cv_image is not None:
+                    self.detect_traffic_light(self.cv_image)
+                    cv2.waitKey(1)
+                rate.sleep()
 
-            rate = rospy.Rate(30)  # 루프 주기 설정
-            while not rospy.is_shutdown():  # ROS 노드가 종료될 때까지 반복
-
-                if self.cv_image is not None:  # 카메라 이미지가 있는 경우
-
-
-
-                    result_image = self.detect_traffic_light(self.cv_image)
-                    cv2.imshow('result_image', result_image)
-
-                    cv2.waitKey(1)  # 키 입력 대기
-                rate.sleep()  # 주기마다 대기
-                
         finally:
-            cv2.destroyAllWindows()  # 창 닫기
+            cv2.destroyAllWindows()
 
-        
+    def nothing(self, x):
+        pass
+
     def cameraCB(self, msg):
         try:
-            self.cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")  # ROS 이미지 메시지를 OpenCV 이미지로 변환
+            self.cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
         except CvBridgeError as e:
             print(e)
 
+
+    def filter_circular_contours(self, contours, circularity_threshold=0.6, min_area=100):
+        filtered_contours = []
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            perimeter = cv2.arcLength(contour, True)
+            if perimeter == 0:
+                continue
+            circularity = 4 * np.pi * (area / (perimeter * perimeter))
+            if circularity > circularity_threshold and area > min_area:  # 원형 비율 임계값과 최소 면적
+                filtered_contours.append(contour)
+        return filtered_contours
+
+    def get_contour_centers(self, contours):
+        centers = []
+        for contour in contours:
+            M = cv2.moments(contour)
+            if M["m00"] != 0:
+                cX = int(M["m10"] / M["m00"])
+                cY = int(M["m01"] / M["m00"])
+                centers.append((cX, cY))
+        return centers
+
     def detect_traffic_light(self, image):
-        # 이미지 색상 공간 변환 (BGR -> HSV)
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-        
-        # 신호등의 색상 범위 정의 (HSV 색상 범위)
-        # 빨간색
-        lower_red1 = np.array([0, 100, 100])
-        upper_red1 = np.array([10, 255, 255])
-        lower_red2 = np.array([160, 100, 100])
-        upper_red2 = np.array([180, 255, 255])
-        
-        # 초록색 (세분화된 범위)
-        lower_green1 = np.array([30, 100, 100])
-        upper_green1 = np.array([50, 255, 255])
-        lower_green2 = np.array([50, 100, 100])
-        upper_green2 = np.array([85, 255, 255])
 
-        # 색상 범위에 따라 마스크 생성
-        red_mask1 = cv2.inRange(hsv_image, lower_red1, upper_red1)
-        red_mask2 = cv2.inRange(hsv_image, lower_red2, upper_red2)
-        red_mask = cv2.bitwise_or(red_mask1, red_mask2)
-        
-        green_mask1 = cv2.inRange(hsv_image, lower_green1, upper_green1)
-        green_mask2 = cv2.inRange(hsv_image, lower_green2, upper_green2)
-        green_mask = cv2.bitwise_or(green_mask1, green_mask2)
+        h, s, v = cv2.split(hsv_image)
 
-        # 마스크를 정제하기 위해 형태학적 연산 적용
-        kernel = np.ones((5, 5), np.uint8)
-        red_mask = cv2.morphologyEx(red_mask, cv2.MORPH_CLOSE, kernel)
-        green_mask = cv2.morphologyEx(green_mask, cv2.MORPH_CLOSE, kernel)
+        cv2.imshow('h', h)
+        cv2.imshow('s', s)
+        cv2.imshow('v', v)
 
-        # 마스크를 원본 이미지에 적용
-        red_result = cv2.bitwise_and(image, image, mask=red_mask)
-        green_result = cv2.bitwise_and(image, image, mask=green_mask)
+        # Red trackbar values
+        h_min_red1 = cv2.getTrackbarPos('H_min_red1', 'Red Trackbars')
+        h_max_red1 = cv2.getTrackbarPos('H_max_red1', 'Red Trackbars')
+        s_min_red1 = cv2.getTrackbarPos('S_min_red1', 'Red Trackbars')
+        s_max_red1 = cv2.getTrackbarPos('S_max_red1', 'Red Trackbars')
+        v_min_red1 = cv2.getTrackbarPos('V_min_red1', 'Red Trackbars')
+        v_max_red1 = cv2.getTrackbarPos('V_max_red1', 'Red Trackbars')
 
-        # 마스크 이미지에서 신호등 위치 검출
+        # Green trackbar values
+        h_min_green1 = cv2.getTrackbarPos('H_min_green1', 'Green Trackbars')
+        h_max_green1 = cv2.getTrackbarPos('H_max_green1', 'Green Trackbars')
+        s_min_green1 = cv2.getTrackbarPos('S_min_green1', 'Green Trackbars')
+        s_max_green1 = cv2.getTrackbarPos('S_max_green1', 'Green Trackbars')
+        v_min_green1 = cv2.getTrackbarPos('V_min_green1', 'Green Trackbars')
+        v_max_green1 = cv2.getTrackbarPos('V_max_green1', 'Green Trackbars')
+
+        lower_red1 = np.array([h_min_red1, s_min_red1, v_min_red1])
+        upper_red1 = np.array([h_max_red1, s_max_red1, v_max_red1])
+        lower_green1 = np.array([h_min_green1, s_min_green1, v_min_green1])
+        upper_green1 = np.array([h_max_green1, s_max_green1, v_max_green1])
+
+        red_mask = cv2.inRange(hsv_image, lower_red1, upper_red1)
+        green_mask = cv2.inRange(hsv_image, lower_green1, upper_green1)
+
+        cv2.imshow('red_mask', red_mask)
+        cv2.imshow('green_mask', green_mask)
+        # 윤곽선 찾기
         red_contours, _ = cv2.findContours(red_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         green_contours, _ = cv2.findContours(green_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        # 신호등을 원본 이미지에 표시
-        for contour in red_contours:
-            if cv2.contourArea(contour) > 500:  # 면적 필터링
-                x, y, w, h = cv2.boundingRect(contour)
-                cv2.rectangle(image, (x, y), (x+w, y+h), (0, 0, 255), 2)  # 빨간색 박스
-                print("RED")
+        red_filtered_contours = self.filter_circular_contours(red_contours)
+        green_filtered_contours = self.filter_circular_contours(green_contours)
 
-        for contour in green_contours:
-            if cv2.contourArea(contour) > 10:  # 면적 필터링
-                x, y, w, h = cv2.boundingRect(contour)
-                cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 2)  # 초록색 박스
-                print("GREEN")
+        # 빈 이미지 생성 (배경 검은색)
+        red_result = np.zeros_like(red_mask)
+        green_result = np.zeros_like(green_mask)
 
-        return image
+        # 필터링된 윤곽선만 그림
+        cv2.drawContours(red_result, red_filtered_contours, -1, (255), thickness=cv2.FILLED)
+        cv2.drawContours(green_result, green_filtered_contours, -1, (255), thickness=cv2.FILLED)
 
+        red_pixel_counts = np.count_nonzero(red_result)
+        green_pixel_counts = np.count_nonzero(green_result)
+
+        cv2.imshow('red_result', red_result)
+        cv2.imshow('green_result', green_result)
+
+        # 무게중심 계산
+        red_centers = self.get_contour_centers(red_filtered_contours)
+        green_centers = self.get_contour_centers(green_filtered_contours)
+
+        print("Red Centers: ", red_centers)
+        print("Green Centers: ", green_centers)
+
+
+        print()
+
+        # 중심 좌표 배열로 변환
+        red_centers_flattened = [coord for center in red_centers for coord in center]
+        green_centers_flattened = [coord for center in green_centers for coord in center]
+
+
+
+        msg = Int64MultiArray()
+        msg.data = [red_pixel_counts, green_pixel_counts]
+        self.traffic_light_pub.publish(msg)
+
+        red_centers_msg = Int64MultiArray()
+        red_centers_msg.data = red_centers_flattened
+        self.red_center_pub.publish(red_centers_msg)
+        
+        green_centers_msg = Int64MultiArray()
+        green_centers_msg.data = green_centers_flattened
+        self.green_center_pub.publish(green_centers_msg)
 
 if __name__ == '__main__':
     try:
-        traffic_detection_node = TrafficDetection()  # AutopilotControl 객체 생성
+        traffic_detection_node = TrafficDetection()
     except rospy.ROSInterruptException:
-        pass  # 예외 발생 시 무시하고 종료
+        pass

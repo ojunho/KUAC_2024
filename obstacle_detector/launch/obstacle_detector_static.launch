@@ -27,6 +27,6 @@
     <param name="min_y_limit" value="-0.4"/>
     <param name="max_y_limit" value="0.4"/>
   </node>
-  <node name="rviz" pkg="rviz" type="rviz" args="-d /home/xytron/default0715.rviz" />
+  <node name="rviz_static" pkg="rviz" type="rviz" args="-d /home/xytron/rviz_static.rviz" />
 
 </launch>

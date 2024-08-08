@@ -15,5 +15,5 @@
     <include file="$(find xycar_ultrasonic)/launch/xycar_ultrasonic.launch" />
 
     <!-- heading, lidar_clustering 동시 진행 -->
-    <!-- <include file="$(find sensor_manager)/launch/sensor_process.launch" /> -->
+    <include file="$(find sensor_manager)/launch/sensor_process.launch" />
 </launch>

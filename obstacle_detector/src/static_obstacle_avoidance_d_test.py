@@ -16,7 +16,7 @@ class Obstacle:
 
 class StaticAvoidance():
     def __init__(self):
-        rospy.Subscriber("/raw_obstacles", Obstacles, self.obstacleCB)
+        rospy.Subscriber("/raw_obstacles_static", Obstacles, self.obstacleCB)
         rospy.Subscriber("/heading", Float64, self.headingCB)
 
         self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor_static', xycar_motor, queue_size=1)

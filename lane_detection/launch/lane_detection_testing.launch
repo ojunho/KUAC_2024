@@ -1,9 +1,0 @@
-<launch>
-
-  <!-- IMU 기반 heading 계산기 -->
-  <include file="$(find heading)/launch/imu_heading.launch"/>
-
-  
-  <node name="lane_detection" pkg="lane_detection" type="lane_detection_testing.py" output="screen"/>
-  
-</launch>

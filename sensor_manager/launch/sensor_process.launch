@@ -2,6 +2,15 @@
     <!-- IMU 기반 heading 계산기 -->
     <include file="$(find heading)/launch/imu_heading.launch"/>
 
-    <!-- LiDAR 기반 Obstacle -->
+    <!-- AR tag 인식 패키지 -->
+    <include file="$(find ar_track_alvar)/launch/pr2_indiv_no_kinect.launch" />
+
+    <!-- 신호등 인지 코드 -->
+    <include file="$(find cv_detect)/launch/traffic_detection.launch" />
+
+    <!-- 정적장애물 Clustering -->
     <include file="$(find obstacle_detector)/launch/obstacle_detector_static.launch"/>
+
+    <!-- 라바콘 Clustering -->
+    <include file="$(find obstacle_detector)/launch/obstacle_detector_rubbercone.launch"/>
 </launch>
