@@ -61,10 +61,11 @@ class LaneDetection(object):
             
             self.steer = 0.0  # 조향각 초기화
             self.motor = 0.0  # 모터 속도 초기화
-            
-            # self.pid = PID(0.15, 0.0003, 0.325)  # PID 제어기 초기화
-   
+           
+            # 원래 잘되던 버전
             self.pid = PID(0.7, 0.0008, 0.15)
+
+            # self.pid = PID(0.69, 0.0008, 0.15)
             self.cv_image = None  # 카메라 이미지 초기화
             
             

@@ -112,8 +112,8 @@ class XycarPlanner:
                     # 특정 roi에 인지가 들어오면 일단 감속
                     for obstacle in self.obstacles:
                         if (0 < obstacle.x < 2.0) and (-0.45 <= obstacle.y <= 0.45):
-                            self.motor = 4
-                            print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+                            self.motor = 5
+                            #print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
                 self.publishCtrlCmd(self.motor, self.steer)
                 # print('self.lane_mode_flag', self.lane_mode_flag)
