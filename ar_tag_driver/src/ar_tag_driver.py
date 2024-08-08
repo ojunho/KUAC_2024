@@ -74,6 +74,9 @@ class ArTagDriver:
         self.red_centers = []
         self.green_centers = []
 
+        self.ar_after_traffic_flag = False
+        self.ar_tag_not_detected_count = 0
+
 
 
     def run(self):
@@ -118,6 +121,8 @@ class ArTagDriver:
 
 
 
+            # self.flag 를 언제 False 로 바꿔 주느냐..? 
+            # 신호등 통과 이후 한번이라도 ar을 본 이후로 몇번 연속이나 ar 을 못보면 lane으로 이동 
             # ------------------------------------------- 신호등 통과 이후 ------------------------------------------- #
             elif self.is_traffic_passed == True:
                 if len(self.green_centers) > 0:
@@ -128,11 +133,31 @@ class ArTagDriver:
                     if len(self.sorted_ar_list) > 0:
                         self.angle = int(math.degrees(17.5 * (self.closest_ar.x - 0.2) / (self.closest_ar.z)))
 
+                        # 신호등 이후 AR 을 인지 했는지를 점검 -> 인지가 특정 프레임 이상 안되면 다음 미션으로 넘기기 위함.
+                        if self.ar_after_traffic_flag == False:
+                            self.ar_after_traffic_flag = True
+
                     elif len(self.sorted_ar_list) == 0: 
 
                         self.angle = -5
             # ------------------------------------------- 신호등 통과 이후 ------------------------------------------- #
 
+
+
+            # ------------------------------------------- 미션 상태 관리 ------------------------------------------- #
+            if self.ar_after_traffic_flag == True:
+                if len(self.sorted_ar_list) == 0:
+                    self.ar_tag_not_detected_count += 1
+                else:
+                    self.ar_tag_not_detected_count = 0
+            
+            ar_tag_not_detected_count_threshold = 15
+            if self.ar_tag_not_detected_count > ar_tag_not_detected_count_threshold:
+                self.ar_tag_not_detected_count = ar_tag_not_detected_count_threshold
+            
+                if self.ar_tag_not_detected_count >= ar_tag_not_detected_count_threshold:
+                    self.flag = False
+            # ------------------------------------------- 미션 상태 관리 ------------------------------------------- #
 
 
             self.speed = 6
@@ -153,8 +178,6 @@ class ArTagDriver:
 
         if not msg.markers:
             return
-
-        self.flag = True
         # Calculate distances and sort markers by distance
         for marker in msg.markers:
             new_ar = ArTag(marker)
