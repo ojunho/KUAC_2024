@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import math
 import rospy
 from obstacle_detector.msg import Obstacles
 from visualization_msgs.msg import Marker
+from xycar_msgs.msg import xycar_motor
+from scipy.stats import linregress
+import numpy as np
 
 class Object:
     def __init__(self, centerX, centerY):
@@ -36,6 +40,12 @@ class WaypointMaker:
         
         rospy.Subscriber("raw_obstacles_rubbercone", Obstacles, self.update_objects)
         self.maker_pub = rospy.Publisher('visualization_marker', Marker, queue_size=500)
+        self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor_rubbercone', xycar_motor, queue_size=1)
+
+
+        self.ctrl_cmd_msg = xycar_motor()
+
+        self.flag = False
 
     def reset_pivot(self, left="LEFT"):
         if left == "LEFT":
@@ -112,13 +122,35 @@ class WaypointMaker:
 
     def set_waypoint_info(self):
         midpoints = []
+        x_vals = []
+        y_vals = []
         for i in range(5):
             l_obj = self.leftCones.cones[i]
             r_obj = self.rightCones.cones[i]
-            midpoint = Object((l_obj.centerX + r_obj.centerX) / 2,
-                              (l_obj.centerY + r_obj.centerY) / 2)
+            mid_x = (l_obj.centerX + r_obj.centerX) / 2
+            mid_y = (l_obj.centerY + r_obj.centerY) / 2
+            midpoint = Object(mid_x, mid_y)
+            x_vals.append(mid_x)
+            y_vals.append(mid_y)
+
             midpoints.append(midpoint)
             self.publish_point_marker(midpoint, i+100, 0.05, 0.8, 0.7, 0.85)
+
+        x_vals = np.array(x_vals)
+        y_vals = np.array(y_vals)
+        if len(set(x_vals)) == 1:  # 모든 x 값이 동일한지 확인
+            # print("All x values are identical; setting slope to a predefined value.")
+            slope = 0  # 미리 정의된 slope 값 설정
+            self.flag = False
+        else:
+            slope, intercept, r_value, p_value, std_err = linregress(x_vals, y_vals)
+            self.flag = True
+
+        angle_rad = math.atan(slope)
+        angle_deg = -math.degrees(angle_rad)
+        # print(angle_deg)
+        self.publishCtrlCmd(5, angle_deg, self.flag)
+
 
         # waypoints = self.interpolate_objects(midpoints)
         # for i, point in enumerate(waypoints):
@@ -139,6 +171,14 @@ class WaypointMaker:
 
         return interpolated_objects
     
+
+    def publishCtrlCmd(self, motor_msg, servo_msg, flag):
+        self.ctrl_cmd_msg.speed = round(motor_msg)  # 모터 속도 설정
+        self.ctrl_cmd_msg.angle = round(servo_msg)  # 조향각 설정
+        self.ctrl_cmd_msg.flag = flag
+        self.ctrl_cmd_pub.publish(self.ctrl_cmd_msg)  # 명령 퍼블리시
+
+
     def publish_point_marker(self, point, id, scale=0.1, r=1.0, g=1.0, b=1.0):
         marker = Marker()
         marker.header.frame_id = "laser_frame"

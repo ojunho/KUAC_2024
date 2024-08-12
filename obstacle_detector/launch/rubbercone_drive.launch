@@ -1,3 +1,3 @@
 <launch>
-  <node name="rubbercone_drive" pkg="obstacle_detector" type="rubbercone_drive.py" output="screen"/>
+  <node name="rubbercone_drive" pkg="obstacle_detector" type="rubbercone_drive_pivot.py" output="screen"/>
 </launch>

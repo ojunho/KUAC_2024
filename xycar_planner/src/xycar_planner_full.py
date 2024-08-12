@@ -60,100 +60,110 @@ class XycarPlanner:
     def __init__(self):
         rospy.init_node('xycar_planner', anonymous=True)  # ROS 노드 초기화
         
-        try:
-            # 카메라와 IMU 데이터 구독
-            rospy.Subscriber("/xycar_motor_lane", xycar_motor, self.ctrlLaneCB)
-            rospy.Subscriber("/xycar_motor_static", xycar_motor, self.ctrlStaticCB)
-            rospy.Subscriber("/xycar_motor_ar", xycar_motor, self.ctrlARCB)
-            rospy.Subscriber("/xycar_motor_rubbercone", xycar_motor, self.ctrlRubberconeCB)
+        # 카메라와 IMU 데이터 구독
+        rospy.Subscriber("/xycar_motor_lane", xycar_motor, self.ctrlLaneCB)
+        rospy.Subscriber("/xycar_motor_static", xycar_motor, self.ctrlStaticCB)
+        rospy.Subscriber("/xycar_motor_ar", xycar_motor, self.ctrlARCB)
+        rospy.Subscriber("/xycar_motor_rubbercone", xycar_motor, self.ctrlRubberconeCB)
 
 
 
-            rospy.Subscriber("/raw_obstacles_static", Obstacles, self.obstacleCB)
-
-            # 모터 제어 명령과 현재 속도 퍼블리셔 설정
-            self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor', xycar_motor, queue_size=1)
-            self.mode_pub = rospy.Publisher('/mode', Int32, queue_size=1)
+        rospy.Subscriber("/raw_obstacles_static", Obstacles, self.staticObstacleCB)
+        rospy.Subscriber("/raw_obstacles_rubbercone", Obstacles, self.rubberconeObstacleCB)
 
 
-            self.bridge = CvBridge()  # CV-Bridge 초기화
+        # 모터 제어 명령과 현재 속도 퍼블리셔 설정
+        self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor', xycar_motor, queue_size=1)
+        self.mode_pub = rospy.Publisher('/mode', Int32, queue_size=1)
 
 
-            self.steer = 0.0  # 조향각 초기화
-            self.motor = 0.0  # 모터 속도 초기화
-
-            self.ctrl_cmd_msg = xycar_motor()
-
-            self.ctrl_lane = xycar_motor()  # 모터 제어 메시지 초기화
-            self.ctrl_static = xycar_motor()
-            self.ctrl_rubbercone = xycar_motor()
-            self.ctrl_ar = xycar_motor()
-
-            self.ar_mode_flag = False
-            self.rubbercone_mode_flag = False
-            self.static_mode_flag = False
-            self.lane_mode_flag = False
+        self.bridge = CvBridge()  # CV-Bridge 초기화
 
 
-            # mode
-            self.mode = ''
+        self.steer = 0.0  # 조향각 초기화
+        self.motor = 0.0  # 모터 속도 초기화
+
+        self.ctrl_cmd_msg = xycar_motor()
+
+        self.ctrl_lane = xycar_motor()  # 모터 제어 메시지 초기화
+        self.ctrl_static = xycar_motor()
+        self.ctrl_rubbercone = xycar_motor()
+        self.ctrl_ar = xycar_motor()
+
+        self.ar_mode_flag = False
+        self.rubbercone_mode_flag = False
+        self.static_mode_flag = False
+        self.lane_mode_flag = False
 
 
-
-            self.pid = PID(0.7, 0.0008, 0.15)
-
-            self.obstacles = []
-
-            rate = rospy.Rate(30)  # 루프 주기 설정
-            while not rospy.is_shutdown():  # ROS 노드가 종료될 때까지 반복
+        # mode
+        self.mode = ''
 
 
 
-                # MODE 판별
-                if self.ar_mode_flag == True:
-                    self.mode = 'AR'
-                elif self.rubbercone_mode_flag == True:
-                    self.mode = 'RUBBERCONE'
-                elif self.static_mode_flag == True:
-                    self.mode = 'STATIC'
-                else:
-                    self.mode = 'LANE'
+        self.pid = PID(0.7, 0.0008, 0.15)
 
-                # MODE에 따른 motor, steer 설정
-                if self.mode != '':
-                    if self.mode == 'AR':
-                        self.motor = self.ctrl_ar.speed
-                        self.steer = self.ctrl_ar.angle
-                    elif self.mode == 'RUBBERCONE':
-                        self.motor = self.ctrl_rubbercone.speed
-                        self.steer = self.ctrl_rubbercone.angle
-                    elif self.mode == 'STATIC':
-                        self.motor = self.ctrl_static.speed
-                        self.steer = self.ctrl_static.angle
-                    else:               # LANE
-                        self.motor = self.ctrl_lane.speed
-                        self.steer = self.ctrl_lane.angle
-                else:
-                    print("SOMETHING WRONG")
-                    continue
+        self.static_obstacles = []
+        self.rubbercone_obstacles = []
+
+        rate = rospy.Rate(30)  # 루프 주기 설정
+        while not rospy.is_shutdown():  # ROS 노드가 종료될 때까지 반복
 
 
-                # --------------------------- 장애물 인지시 감속 --------------------------- # 
-                if len(self.obstacles) > 0:
-                    # 특정 roi에 인지가 들어오면 일단 감속
-                    for obstacle in self.obstacles:
-                        if (0 < obstacle.x < 2.0) and (-0.45 <= obstacle.y <= 0.45):
-                            self.motor = 5
-                # --------------------------- 장애물 인지시 감속 --------------------------- # 
+
+            # MODE 판별
+            # if self.ar_mode_flag == True:
+            #     self.mode = 'AR'
+            if self.rubbercone_mode_flag == True:
+                self.mode = 'RUBBERCONE'
+            elif self.static_mode_flag == True:
+                self.mode = 'STATIC'
+            else:
+                self.mode = 'LANE'
+
+            # MODE에 따른 motor, steer 설정
+            if self.mode != '':
+                if self.mode == 'AR':
+                    self.motor = self.ctrl_ar.speed
+                    self.steer = self.ctrl_ar.angle
+                elif self.mode == 'RUBBERCONE':
+                    self.motor = self.ctrl_rubbercone.speed
+                    self.steer = self.ctrl_rubbercone.angle
+                elif self.mode == 'STATIC':
+                    self.motor = self.ctrl_static.speed
+                    self.steer = self.ctrl_static.angle
+                else:               # LANE
+                    self.motor = self.ctrl_lane.speed
+                    self.steer = self.ctrl_lane.angle
+            else:
+                print("SOMETHING WRONG")
+                continue
 
 
-                self.publishCtrlCmd(self.motor, self.steer)
+            # --------------------------- 장애물 인지시 감속 --------------------------- # 
+            if len(self.static_obstacles) > 0:
+                # 특정 roi에 인지가 들어오면 일단 감속
+                for obstacle in self.static_obstacles:
+                    if (0 < obstacle.x < 2.0) and (-0.45 <= obstacle.y <= 0.45):
+                        self.motor = 5
+            # --------------------------- 장애물 인지시 감속 --------------------------- # 
 
-                cv2.waitKey(1)  # 키 입력 대기
-                rate.sleep()  # 주기마다 대기
+            # --------------------------- 라바콘 인지시 감속 --------------------------- # 
+            if len(self.rubbercone_obstacles) > 0:
+                # 특정 roi에 인지가 들어오면 일단 감속
+                for obstacle in self.rubbercone_obstacles:
+                    if (0 < obstacle.x < 2.0) and (-0.45 <= obstacle.y <= 0.45):
+                        self.motor = 5
+            # --------------------------- 라바콘 인지시 감속 --------------------------- # 
+
+            print('self.mode: ', self.mode)
+
+            self.publishCtrlCmd(self.motor, self.steer)
+
+            cv2.waitKey(1)  # 키 입력 대기
+            rate.sleep()  # 주기마다 대기
                 
-        finally:
-            cv2.destroyAllWindows()  # 창 닫기
+        cv2.destroyAllWindows()  # 창 닫기
 
         
     def publishCtrlCmd(self, motor_msg, servo_msg):
@@ -182,21 +192,37 @@ class XycarPlanner:
         self.ar_mode_flag = msg.flag
 
 
-    def obstacleCB(self, msg):
-        self.obstacles = []
+    def staticObstacleCB(self, msg):
+        self.static_obstacles = []
         for circle in msg.circles:
             x = circle.center.x
             y = circle.center.y
             distance = (x**2 + y**2) ** 0.5  # 유클리드 거리 계산
             obstacle = Obstacle(x, y, distance)
-            self.obstacles.append(obstacle)
+            self.static_obstacles.append(obstacle)
         
-        self.obstacles.sort(key=lambda obs: obs.distance)
+        self.static_obstacles.sort(key=lambda obs: obs.distance)
 
-        if len(self.obstacles) > 0:
-            self.closest_obstacle = self.obstacles[0]
+        if len(self.static_obstacles) > 0:
+            self.closest_static_obstacle = self.static_obstacles[0]
         else:
-            self.closest_obstacle = Obstacle()
+            self.closest_static_obstacle = Obstacle()
+    
+    def rubberconeObstacleCB(self, msg):
+        self.rubbercone_obstacles = []
+        for circle in msg.circles:
+            x = circle.center.x
+            y = circle.center.y
+            distance = (x**2 + y**2) ** 0.5  # 유클리드 거리 계산
+            obstacle = Obstacle(x, y, distance)
+            self.rubbercone_obstacles.append(obstacle)
+        
+        self.rubbercone_obstacles.sort(key=lambda obs: obs.distance)
+
+        if len(self.rubbercone_obstacles) > 0:
+            self.closest_rubbercone_obstacle = self.rubbercone_obstacles[0]
+        else:
+            self.closest_rubbercone_obstacle = Obstacle()
 
 
 
