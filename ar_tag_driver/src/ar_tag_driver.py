@@ -51,7 +51,12 @@ class ArTagDriver:
 
         self.heading = None
 
-        self.is_traffic_passed = False
+
+        # self.is_traffic_passed = False
+        # 신호등 안되어서 강제로 이후로 점프
+        
+        self.is_traffic_passed = True
+        
 
         self.closest_ar = None
 

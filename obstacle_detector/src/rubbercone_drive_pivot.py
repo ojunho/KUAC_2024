@@ -121,6 +121,9 @@ class WaypointMaker:
             self.publish_point_marker(cone, i+10, 0.1, 0.63, 0.82, 1.0)
 
     def set_waypoint_info(self):
+        # l = self.leftCones.cones[0]
+        # r = self.rightCones.cones[0]
+        
         midpoints = []
         x_vals = []
         y_vals = []
@@ -134,22 +137,24 @@ class WaypointMaker:
             y_vals.append(mid_y)
 
             midpoints.append(midpoint)
+        for i, midpoint in enumerate(midpoints):
             self.publish_point_marker(midpoint, i+100, 0.05, 0.8, 0.7, 0.85)
 
         x_vals = np.array(x_vals)
         y_vals = np.array(y_vals)
+        print(x_vals, y_vals)
         if len(set(x_vals)) == 1:  # 모든 x 값이 동일한지 확인
             # print("All x values are identical; setting slope to a predefined value.")
             slope = 0  # 미리 정의된 slope 값 설정
             self.flag = False
         else:
-            slope, intercept, r_value, p_value, std_err = linregress(x_vals, y_vals)
+            slope, intercept, r_value, p_value, std_err = linregress(np.insert(x_vals, 0, 0), np.insert(y_vals, 0, 0))
             self.flag = True
 
         angle_rad = math.atan(slope)
         angle_deg = -math.degrees(angle_rad)
         # print(angle_deg)
-        self.publishCtrlCmd(5, angle_deg, self.flag)
+        self.publishCtrlCmd(30, angle_deg, self.flag)
 
 
         # waypoints = self.interpolate_objects(midpoints)

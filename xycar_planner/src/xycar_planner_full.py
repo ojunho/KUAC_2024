@@ -6,7 +6,8 @@ from __future__ import print_function
 
 from xycar_msgs.msg import xycar_motor  # xycar 모터 메시지 모듈 임포트
 from sensor_msgs.msg import Imu  # IMU 데이터 메시지 모듈 임포트
-from std_msgs.msg import Float32, Int32  # Float32 메시지 모듈 임포트
+from std_msgs.msg import Float32, Int32, String  # Float32 메시지 모듈 임포트
+
 
 from math import radians, pi  # 각도를 라디안으로 변환하는 함수 임포트
 
@@ -58,6 +59,13 @@ class PID():
 
 class XycarPlanner:
     def __init__(self):
+        self.ctrl_cmd_msg = xycar_motor()
+
+        self.ctrl_lane = xycar_motor()  # 모터 제어 메시지 초기화
+        self.ctrl_static = xycar_motor()
+        self.ctrl_rubbercone = xycar_motor()
+        self.ctrl_ar = xycar_motor()
+
         rospy.init_node('xycar_planner', anonymous=True)  # ROS 노드 초기화
         
         # 카메라와 IMU 데이터 구독
@@ -74,7 +82,7 @@ class XycarPlanner:
 
         # 모터 제어 명령과 현재 속도 퍼블리셔 설정
         self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor', xycar_motor, queue_size=1)
-        self.mode_pub = rospy.Publisher('/mode', Int32, queue_size=1)
+        self.mode_pub = rospy.Publisher('/mode', String, queue_size=1)
 
 
         self.bridge = CvBridge()  # CV-Bridge 초기화
@@ -83,14 +91,8 @@ class XycarPlanner:
         self.steer = 0.0  # 조향각 초기화
         self.motor = 0.0  # 모터 속도 초기화
 
-        self.ctrl_cmd_msg = xycar_motor()
 
-        self.ctrl_lane = xycar_motor()  # 모터 제어 메시지 초기화
-        self.ctrl_static = xycar_motor()
-        self.ctrl_rubbercone = xycar_motor()
-        self.ctrl_ar = xycar_motor()
-
-        self.ar_mode_flag = False
+        self.ar_mode_flag = True
         self.rubbercone_mode_flag = False
         self.static_mode_flag = False
         self.lane_mode_flag = False
@@ -112,14 +114,16 @@ class XycarPlanner:
 
 
             # MODE 판별
-            # if self.ar_mode_flag == True:
-            #     self.mode = 'AR'
-            if self.rubbercone_mode_flag == True:
+            if self.ar_mode_flag == True:
+                self.mode = 'AR'
+            elif self.rubbercone_mode_flag == True:
                 self.mode = 'RUBBERCONE'
             elif self.static_mode_flag == True:
                 self.mode = 'STATIC'
             else:
                 self.mode = 'LANE'
+
+            self.mode_pub.publish(self.mode)
 
             # MODE에 따른 motor, steer 설정
             if self.mode != '':
@@ -141,19 +145,19 @@ class XycarPlanner:
 
 
             # --------------------------- 장애물 인지시 감속 --------------------------- # 
-            if len(self.static_obstacles) > 0:
+            if 3 > len(self.static_obstacles) > 0 and self.mode != "RUBBERCONE":
                 # 특정 roi에 인지가 들어오면 일단 감속
                 for obstacle in self.static_obstacles:
-                    if (0 < obstacle.x < 2.0) and (-0.45 <= obstacle.y <= 0.45):
-                        self.motor = 5
+                    if (0 < obstacle.x < 1.5) and (-0.25 <= obstacle.y <= 0.25):
+                        self.motor = 7
             # --------------------------- 장애물 인지시 감속 --------------------------- # 
 
             # --------------------------- 라바콘 인지시 감속 --------------------------- # 
-            if len(self.rubbercone_obstacles) > 0:
-                # 특정 roi에 인지가 들어오면 일단 감속
-                for obstacle in self.rubbercone_obstacles:
-                    if (0 < obstacle.x < 2.0) and (-0.45 <= obstacle.y <= 0.45):
-                        self.motor = 5
+            # if len(self.rubbercone_obstacles) > 0:
+            #     # 특정 roi에 인지가 들어오면 일단 감속
+            #     for obstacle in self.rubbercone_obstacles:
+            #         if (0 < obstacle.x < 2.0) and (-0.45 <= obstacle.y <= 0.45):
+            #             self.motor = 30
             # --------------------------- 라바콘 인지시 감속 --------------------------- # 
 
             print('self.mode: ', self.mode)

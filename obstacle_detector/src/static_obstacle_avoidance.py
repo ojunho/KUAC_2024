@@ -3,7 +3,7 @@
 
 import rospy
 from obstacle_detector.msg import Obstacles
-from std_msgs.msg import Int32, Float64, Int32MultiArray
+from std_msgs.msg import Int32, Float64, Int32MultiArray, String
 from xycar_msgs.msg import xycar_motor
 import math
 import time
@@ -19,6 +19,8 @@ class StaticAvoidance():
     def __init__(self):
         rospy.Subscriber("/raw_obstacles_static", Obstacles, self.obstacleCB)
         rospy.Subscriber("/heading", Float64, self.headingCB)
+        rospy.Subscriber("/mode", String, self.modeCB)
+
 
 
         self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor_static', xycar_motor, queue_size=1)
@@ -66,11 +68,15 @@ class StaticAvoidance():
         self.len_last_n_obstacles_y = 5
         self.avg_y = None
 
+        self.mode = ''
+
         
 
         rate = rospy.Rate(30)
         while not rospy.is_shutdown():
 
+            if self.mode == 'RUBBERCONE' or self.mode == 'AR':
+                continue
 
             if len(self.obstacles) > 0:
                 # 특정 roi에 인지가 들어오면 일단 감속
@@ -216,6 +222,9 @@ class StaticAvoidance():
                 self.local_heading += 360
         else:
             self.local_heading = None
+
+    def modeCB(self, msg):
+        self.mode = msg.data
 
 
     def update_last_n_obstacles_y(self, y, n):

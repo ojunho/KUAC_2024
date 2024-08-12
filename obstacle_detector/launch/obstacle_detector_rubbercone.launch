@@ -23,9 +23,9 @@
     <param name="frame_id"             value="laser_frame"/>
     
     <param name="min_x_limit" value="0.0"/>
-    <param name="max_x_limit" value="0.5"/>
+    <param name="max_x_limit" value="0.75"/>
     <param name="min_y_limit" value="-0.9"/>
-    <param name="max_y_limit" value="1.2"/>
+    <param name="max_y_limit" value="0.9"/>
   </node>
   <node name="rviz_rubbercone" pkg="rviz" type="rviz" args="-d /home/xytron/rviz_rubbercone.rviz" />
 
