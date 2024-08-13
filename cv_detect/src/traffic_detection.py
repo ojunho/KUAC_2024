@@ -60,7 +60,7 @@ class TrafficDetection:
         try:
             self.cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
         except CvBridgeError as e:
-            print(e)
+            rospy.logwarn(e)
 
 
     def filter_circular_contours(self, contours, circularity_threshold=0.6, min_area=100):
@@ -90,9 +90,9 @@ class TrafficDetection:
 
         h, s, v = cv2.split(hsv_image)
 
-        cv2.imshow('h', h)
-        cv2.imshow('s', s)
-        cv2.imshow('v', v)
+        # cv2.imshow('h', h)
+        # cv2.imshow('s', s)
+        # cv2.imshow('v', v)
 
         # Red trackbar values
         h_min_red1 = cv2.getTrackbarPos('H_min_red1', 'Red Trackbars')
@@ -118,8 +118,8 @@ class TrafficDetection:
         red_mask = cv2.inRange(hsv_image, lower_red1, upper_red1)
         green_mask = cv2.inRange(hsv_image, lower_green1, upper_green1)
 
-        cv2.imshow('red_mask', red_mask)
-        cv2.imshow('green_mask', green_mask)
+        # cv2.imshow('red_mask', red_mask)
+        # cv2.imshow('green_mask', green_mask)
         # 윤곽선 찾기
         red_contours, _ = cv2.findContours(red_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         green_contours, _ = cv2.findContours(green_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -138,18 +138,17 @@ class TrafficDetection:
         red_pixel_counts = np.count_nonzero(red_result)
         green_pixel_counts = np.count_nonzero(green_result)
 
-        cv2.imshow('red_result', red_result)
-        cv2.imshow('green_result', green_result)
+        # cv2.imshow('red_result', red_result)
+        # cv2.imshow('green_result', green_result)
 
         # 무게중심 계산
         red_centers = self.get_contour_centers(red_filtered_contours)
         green_centers = self.get_contour_centers(green_filtered_contours)
 
-        print("Red Centers: ", red_centers)
-        print("Green Centers: ", green_centers)
+        # print("Red Centers: ", red_centers)
+        # print("Green Centers: ", green_centers)
 
 
-        print()
 
         # 중심 좌표 배열로 변환
         red_centers_flattened = [coord for center in red_centers for coord in center]

@@ -10,6 +10,8 @@ from std_msgs.msg import Int64MultiArray
 
 import math
 
+import time
+
 class ArTag:
     def __init__(self, marker):
         self.x = marker.pose.pose.position.x
@@ -52,10 +54,9 @@ class ArTagDriver:
         self.heading = None
 
 
-        # self.is_traffic_passed = False
+        self.is_traffic_passed = False
         # 신호등 안되어서 강제로 이후로 점프
-        
-        self.is_traffic_passed = True
+        # self.is_traffic_passed = True
         
 
         self.closest_ar = None
@@ -161,7 +162,11 @@ class ArTagDriver:
                 self.ar_tag_not_detected_count = ar_tag_not_detected_count_threshold
             
                 if self.ar_tag_not_detected_count >= ar_tag_not_detected_count_threshold:
+                    stop_time = time.time()
+                    while time.time() - stop_time < math.pi:
+                        self.publishCtrlCmd(0, self.angle, self.flag)
                     self.flag = False
+
             # ------------------------------------------- 미션 상태 관리 ------------------------------------------- #
 
 

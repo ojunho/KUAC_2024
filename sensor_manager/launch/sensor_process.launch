@@ -8,6 +8,9 @@
     <!-- 신호등 인지 코드 -->
     <include file="$(find cv_detect)/launch/traffic_detection.launch" />
 
+    <!-- 라바콘 오랜지 인지 코드 -->
+    <include file="$(find cv_detect)/launch/rubbercone_orange_detection.launch" />
+
     <!-- 정적장애물 Clustering -->
     <include file="$(find obstacle_detector)/launch/obstacle_detector_static.launch"/>
 

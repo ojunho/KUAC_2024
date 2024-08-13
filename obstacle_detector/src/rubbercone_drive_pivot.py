@@ -7,6 +7,7 @@ from obstacle_detector.msg import Obstacles
 from visualization_msgs.msg import Marker
 from xycar_msgs.msg import xycar_motor
 from scipy.stats import linregress
+from std_msgs.msg import String, Bool
 import numpy as np
 
 class Object:
@@ -39,6 +40,10 @@ class WaypointMaker:
         self.rightPivot = self.reset_pivot("RIGHT")
         
         rospy.Subscriber("raw_obstacles_rubbercone", Obstacles, self.update_objects)
+        rospy.Subscriber("/is_orange", Bool, self.orangeCB)
+
+        rospy.Subscriber("/mode", String, self.modeCB)
+
         self.maker_pub = rospy.Publisher('visualization_marker', Marker, queue_size=500)
         self.ctrl_cmd_pub = rospy.Publisher('/xycar_motor_rubbercone', xycar_motor, queue_size=1)
 
@@ -46,6 +51,10 @@ class WaypointMaker:
         self.ctrl_cmd_msg = xycar_motor()
 
         self.flag = False
+
+        self.mode = ''
+
+        self.is_orange = False
 
     def reset_pivot(self, left="LEFT"):
         if left == "LEFT":
@@ -56,6 +65,12 @@ class WaypointMaker:
     def update_objects(self, data):
         objects = [Object(circle.center.x, circle.center.y) for circle in data.circles]
         self.objects = sorted(objects, key=lambda x:self.get_distance(Object(0, 0), x))
+
+    def modeCB(self, msg):
+        self.mode = msg.data
+
+    def orangeCB(self, msg):
+        self.is_orange = msg.data
         
     def get_distance(self, obj1, obj2):
         return ((obj1.centerX - obj2.centerX) ** 2 + (obj1.centerY - obj2.centerY) ** 2) ** 0.5
@@ -146,6 +161,10 @@ class WaypointMaker:
             # print("All x values are identical; setting slope to a predefined value.")
             slope = 0  # 미리 정의된 slope 값 설정
             self.flag = False
+        elif not self.is_orange:
+            rospy.loginfo(f"라바콘 아님. 라바콘 주행 하면 안됨. 주황색 없음")
+            slope = 0
+            self.flag = False
         else:
             slope, intercept, r_value, p_value, std_err = linregress(np.insert(x_vals, 0, 0), np.insert(y_vals, 0, 0))
             self.flag = True
@@ -216,6 +235,8 @@ def main():
     rate = rospy.Rate(10)
 
     while not rospy.is_shutdown():
+        if waypoint_maker.mode == "STATIC":
+            continue
         waypoint_maker.set_left_right_cone_info()
         waypoint_maker.set_waypoint_info()
 

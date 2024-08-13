@@ -1,0 +1,3 @@
+<launch>
+  <node name="rubbercone_orange_detection_node" pkg="cv_detect" type="rubbercone_orange_detection.py" output="screen"/>
+</launch>

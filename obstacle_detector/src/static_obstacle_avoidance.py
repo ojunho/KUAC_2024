@@ -55,6 +55,7 @@ class StaticAvoidance():
 
 
         self.static_obstacle_cnt = 0
+        self.static_obstacle_cnt_threshold = 10
 
         self.real_heading = None
         self.gt_heading = None
@@ -75,14 +76,18 @@ class StaticAvoidance():
         rate = rospy.Rate(30)
         while not rospy.is_shutdown():
 
+            rospy.loginfo(f"self.avg_y: {self.avg_y}")
+
+
             if self.mode == 'RUBBERCONE' or self.mode == 'AR':
                 continue
 
+            self.speed = 7
             if len(self.obstacles) > 0:
                 # 특정 roi에 인지가 들어오면 일단 감속
                 for obstacle in self.obstacles:
                     # if (0 < obstacle.x < 2.0) and (-0.45 <= obstacle.y <= 0.45):
-                    #     self.speed = 4
+                    #     self.speed = 7
                     
                     if (0 < obstacle.x < 1.0) and (-0.25 <= obstacle.y <= 0.25):
                         self.static_obstacle_cnt += 1
@@ -97,28 +102,28 @@ class StaticAvoidance():
 
             if self.static_obstacle_cnt < 0:
                 self.static_obstacle_cnt = 0
-            elif self.static_obstacle_cnt > 15:
-                self.static_obstacle_cnt = 15
+            elif self.static_obstacle_cnt > self.static_obstacle_cnt_threshold:
+                self.static_obstacle_cnt = self.static_obstacle_cnt_threshold
 
 
             if self.state == 'L':
-                if self.static_obstacle_cnt == 15:
+                if self.static_obstacle_cnt == self.static_obstacle_cnt_threshold:
 
                     self.avg_y = sum(self.last_n_obstacles_y) / len(self.last_n_obstacles_y)
-                    print('self.avg_y: ', self.avg_y)
+                    
 
                     # gt heading
                     self.gt_heading = self.real_heading
 
                     # 장애물의 위치가 중간 or 오른쪽 -> 왼쪽으로 회피
-                    if self.avg_y < 0.15: # -> 장애물의 위치 기반 방향 선택
+                    if self.avg_y < 0.14: # -> 장애물의 위치 기반 방향 선택
                         self.avoid_heading = 37.5
                         self.return_heading = -20
 
                     # 장애물의 위치가 왼쪽 -> 오른쪽으로 회피 
                     else:
                         self.avoid_heading = -20
-                        self.return_heading = 5
+                        self.return_heading = 10
 
                     # flag
                     self.state = 'A'
@@ -131,7 +136,6 @@ class StaticAvoidance():
                     if self.avg_y < 0.15: # -> 장애물의 위치 기반 방향 선택
                         if (self.avoid_heading > self.local_heading): # 목표 heading에 도달하지 못했으면 좌조향
                             self.angle = -15 * abs(self.local_heading - self.avoid_heading)
-                            print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                         else:
                             self.state = 'R'
 
@@ -183,9 +187,9 @@ class StaticAvoidance():
             rospy.loginfo(f"COUNT: {self.static_obstacle_cnt}")
             # print('FLAG : ', self.is_static)
 
-            rospy.loginfo(f"COUNT: {self.gt_heading}")
-            rospy.loginfo(f"COUNT: {self.avoid_heading}")
-            rospy.loginfo(f"COUNT: {self.return_heading}")
+            # rospy.loginfo(f"GT: {self.gt_heading}")
+            # rospy.loginfo(f"AVOID: {self.avoid_heading}")
+            # rospy.loginfo(f"RETURN: {self.return_heading}")
 
             # print('GT   : ', self.gt_heading)
             # print('AVOID: ', self.avoid_heading)

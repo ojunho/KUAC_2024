@@ -57,6 +57,7 @@ ObstacleExtractorPanel::ObstacleExtractorPanel(QWidget* parent) : rviz::Panel(pa
   merge_sep_input_ = new QLineEdit();
   merge_spread_input_ = new QLineEdit();
   max_radius_input_ = new QLineEdit();
+  min_radius_input_ = new QLineEdit();
   radius_enl_input_ = new QLineEdit();
   frame_id_input_ = new QLineEdit();
 
@@ -67,6 +68,7 @@ ObstacleExtractorPanel::ObstacleExtractorPanel(QWidget* parent) : rviz::Panel(pa
   merge_sep_input_->setAlignment(Qt::AlignRight);
   merge_spread_input_->setAlignment(Qt::AlignRight);
   max_radius_input_->setAlignment(Qt::AlignRight);
+  min_radius_input_->setAlignment(Qt::AlignRight);
   radius_enl_input_->setAlignment(Qt::AlignRight);
   frame_id_input_->setAlignment(Qt::AlignRight);
 
@@ -211,6 +213,9 @@ void ObstacleExtractorPanel::verifyInputs() {
   try { p_max_circle_radius_ = boost::lexical_cast<double>(max_radius_input_->text().toStdString()); }
   catch(boost::bad_lexical_cast &) { p_max_circle_radius_ = 0.0; max_radius_input_->setText("0.0"); }
 
+  try { p_min_circle_radius_ = boost::lexical_cast<double>(min_radius_input_->text().toStdString()); }
+  catch(boost::bad_lexical_cast &) { p_min_circle_radius_ = 0.0; min_radius_input_->setText("0.0"); }
+
   try { p_radius_enlargement_ = boost::lexical_cast<double>(radius_enl_input_->text().toStdString()); }
   catch(boost::bad_lexical_cast &) { p_radius_enlargement_ = 0.0; radius_enl_input_->setText("0.0"); }
 
@@ -236,6 +241,7 @@ void ObstacleExtractorPanel::setParams() {
   nh_local_.setParam("max_merge_separation", p_max_merge_separation_);
   nh_local_.setParam("max_merge_spread", p_max_merge_spread_);
   nh_local_.setParam("max_circle_radius", p_max_circle_radius_);
+  nh_local_.setParam("min_circle_radius", p_min_circle_radius_);
   nh_local_.setParam("radius_enlargement", p_radius_enlargement_);
 
   nh_local_.setParam("frame_id", p_frame_id_);
@@ -259,6 +265,7 @@ void ObstacleExtractorPanel::getParams() {
   p_max_merge_separation_ = nh_local_.param("max_merge_separation", 0.0);
   p_max_merge_spread_ = nh_local_.param("max_merge_spread", 0.0);
   p_max_circle_radius_ = nh_local_.param("max_circle_radius", 0.0);
+  p_min_circle_radius_ = nh_local_.param("min_circle_radius", 0.0);
   p_radius_enlargement_ = nh_local_.param("radius_enlargement", 0.0);
 
   p_frame_id_ = nh_local_.param("frame_id", std::string(""));
@@ -305,6 +312,9 @@ void ObstacleExtractorPanel::evaluateParams() {
 
   max_radius_input_->setEnabled(p_active_);
   max_radius_input_->setText(QString::number(p_max_circle_radius_));
+
+  min_radius_input_->setEnabled(p_active_);
+  min_radius_input_->setText(QString::number(p_min_circle_radius_));
 
   radius_enl_input_->setEnabled(p_active_);
   radius_enl_input_->setText(QString::number(p_radius_enlargement_));

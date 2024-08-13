@@ -136,7 +136,7 @@ class XycarPlanner:
 
 
             # --------------------------- 장애물 인지시 감속 --------------------------- # 
-            if 3 > len(self.static_obstacles) > 0 and self.mode != "RUBBERCONE":
+            if len(self.static_obstacles) > 0 and self.mode != "RUBBERCONE":
                 # 특정 roi에 인지가 들어오면 일단 감속
                 for obstacle in self.static_obstacles:
                     if (0 < obstacle.x < 1.5) and (-0.25 <= obstacle.y <= 0.25):
@@ -152,6 +152,8 @@ class XycarPlanner:
             # --------------------------- 라바콘 인지시 감속 --------------------------- # 
 
             rospy.loginfo(f"MODE: {self.mode}")
+            rospy.loginfo(f"SPEED: {self.motor}")
+
 
             self.publishCtrlCmd(self.motor, self.steer)
 
