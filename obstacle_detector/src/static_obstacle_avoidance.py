@@ -81,8 +81,8 @@ class StaticAvoidance():
             if len(self.obstacles) > 0:
                 # 특정 roi에 인지가 들어오면 일단 감속
                 for obstacle in self.obstacles:
-                    if (0 < obstacle.x < 2.0) and (-0.45 <= obstacle.y <= 0.45):
-                        self.speed = 4
+                    # if (0 < obstacle.x < 2.0) and (-0.45 <= obstacle.y <= 0.45):
+                    #     self.speed = 4
                     
                     if (0 < obstacle.x < 1.0) and (-0.25 <= obstacle.y <= 0.25):
                         self.static_obstacle_cnt += 1
@@ -179,9 +179,14 @@ class StaticAvoidance():
             # 다시 일정 기준 heading을 만족하도록 돌아오게 하기. 
 
 
-            # print('STATE: ', self.state)
-            # print('CNT  : ', self.static_obstacle_cnt)
+            rospy.loginfo(f"STATE: {self.state}")
+            rospy.loginfo(f"COUNT: {self.static_obstacle_cnt}")
             # print('FLAG : ', self.is_static)
+
+            rospy.loginfo(f"COUNT: {self.gt_heading}")
+            rospy.loginfo(f"COUNT: {self.avoid_heading}")
+            rospy.loginfo(f"COUNT: {self.return_heading}")
+
             # print('GT   : ', self.gt_heading)
             # print('AVOID: ', self.avoid_heading)
             # print('RETUR: ', self.return_heading)

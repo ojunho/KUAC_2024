@@ -142,7 +142,6 @@ class WaypointMaker:
 
         x_vals = np.array(x_vals)
         y_vals = np.array(y_vals)
-        print(x_vals, y_vals)
         if len(set(x_vals)) == 1:  # 모든 x 값이 동일한지 확인
             # print("All x values are identical; setting slope to a predefined value.")
             slope = 0  # 미리 정의된 slope 값 설정

@@ -63,14 +63,12 @@ class XycarPlanner:
         self.ctrl_lane = xycar_motor()  # 모터 제어 메시지 초기화
         self.ctrl_static = xycar_motor()
         self.ctrl_rubbercone = xycar_motor()
-        self.ctrl_ar = xycar_motor()
 
         rospy.init_node('xycar_planner', anonymous=True)  # ROS 노드 초기화
         
         # 카메라와 IMU 데이터 구독
         rospy.Subscriber("/xycar_motor_lane", xycar_motor, self.ctrlLaneCB)
         rospy.Subscriber("/xycar_motor_static", xycar_motor, self.ctrlStaticCB)
-        rospy.Subscriber("/xycar_motor_ar", xycar_motor, self.ctrlARCB)
         rospy.Subscriber("/xycar_motor_rubbercone", xycar_motor, self.ctrlRubberconeCB)
 
 
@@ -91,7 +89,6 @@ class XycarPlanner:
         self.motor = 0.0  # 모터 속도 초기화
 
 
-        self.ar_mode_flag = True
         self.rubbercone_mode_flag = False
         self.static_mode_flag = False
         self.lane_mode_flag = False
@@ -113,9 +110,7 @@ class XycarPlanner:
 
 
             # MODE 판별
-            if self.ar_mode_flag == True:
-                self.mode = 'AR'
-            elif self.rubbercone_mode_flag == True:
+            if self.rubbercone_mode_flag == True:
                 self.mode = 'RUBBERCONE'
             elif self.static_mode_flag == True:
                 self.mode = 'STATIC'
@@ -126,10 +121,7 @@ class XycarPlanner:
 
             # MODE에 따른 motor, steer 설정
             if self.mode != '':
-                if self.mode == 'AR':
-                    self.motor = self.ctrl_ar.speed
-                    self.steer = self.ctrl_ar.angle
-                elif self.mode == 'RUBBERCONE':
+                if self.mode == 'RUBBERCONE':
                     self.motor = self.ctrl_rubbercone.speed
                     self.steer = self.ctrl_rubbercone.angle
                 elif self.mode == 'STATIC':
@@ -188,11 +180,6 @@ class XycarPlanner:
         self.ctrl_rubbercone.speed = msg.speed
         self.ctrl_rubbercone.angle = msg.angle
         self.rubbercone_mode_flag = msg.flag
-
-    def ctrlARCB(self, msg):
-        self.ctrl_ar.speed = msg.speed
-        self.ctrl_ar.angle = msg.angle
-        self.ar_mode_flag = msg.flag
 
 
     def staticObstacleCB(self, msg):

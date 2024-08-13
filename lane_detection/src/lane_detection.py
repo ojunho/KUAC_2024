@@ -116,7 +116,7 @@ class LaneDetection(object):
         try:
             self.cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")  # ROS 이미지 메시지를 OpenCV 이미지로 변환
         except CvBridgeError as e:
-            print(e)
+            rospy.logwarn(e)
 
 
 if __name__ == '__main__':
