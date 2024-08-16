@@ -8,6 +8,7 @@ from ar_track_alvar_msgs.msg import AlvarMarkers
 
 from std_msgs.msg import Int64MultiArray
 
+import tf.transformations
 import math
 
 import time
@@ -17,6 +18,12 @@ class ArTag:
         self.x = marker.pose.pose.position.x
         self.y = marker.pose.pose.position.y
         self.z = marker.pose.pose.position.z
+
+        self.q_x = marker.pose.pose.orientation.x
+        self.q_y = marker.pose.pose.orientation.y
+        self.q_z = marker.pose.pose.orientation.z
+        self.q_w = marker.pose.pose.orientation.w
+
 
 class ArTagDriver:
     def __init__(self):
@@ -137,7 +144,34 @@ class ArTagDriver:
                 else:
                     # ar 태그를 추종하며 따라가기
                     if len(self.sorted_ar_list) > 0:
-                        self.angle = int(math.degrees(17.5 * (self.closest_ar.x - 0.2) / (self.closest_ar.z)))
+
+
+                        
+
+                        # source_min = 0.9
+                        # source_max = 1.0
+                        # target_min = 0.1
+                        # target_max = 0.25
+
+                        # # 선형 변환 적용
+                        # x_offset = target_min + (self.closest_ar.q_x - source_min) * (target_max - target_min) / (source_max - source_min)
+
+                        # rospy.loginfo(f"QX: {self.closest_ar.q_x}")
+                        # rospy.loginfo(f"x_offset: {x_offset}")
+
+
+
+
+
+                        # self.angle = int(math.degrees(17.5 * (self.closest_ar.x - 0.2) / (self.closest_ar.z)))
+
+
+                        if self.closest_ar.z < 1.5:
+                            self.angle = int(math.degrees(18.75 * (self.closest_ar.x - 0.19) / (self.closest_ar.z)))
+
+                        else:
+                            self.angle = int(math.degrees(18.75 * (self.closest_ar.x - 0.05) / (self.closest_ar.z)))
+
 
                         # 신호등 이후 AR 을 인지 했는지를 점검 -> 인지가 특정 프레임 이상 안되면 다음 미션으로 넘기기 위함.
                         if self.ar_after_traffic_flag == False:
@@ -145,7 +179,7 @@ class ArTagDriver:
 
                     elif len(self.sorted_ar_list) == 0: 
 
-                        self.angle = -5
+                        self.angle = -9
             # ------------------------------------------- 신호등 통과 이후 ------------------------------------------- #
 
 
@@ -157,20 +191,26 @@ class ArTagDriver:
                 else:
                     self.ar_tag_not_detected_count = 0
             
-            ar_tag_not_detected_count_threshold = 15
+            ar_tag_not_detected_count_threshold = 20
             if self.ar_tag_not_detected_count > ar_tag_not_detected_count_threshold:
                 self.ar_tag_not_detected_count = ar_tag_not_detected_count_threshold
             
                 if self.ar_tag_not_detected_count >= ar_tag_not_detected_count_threshold:
+
                     stop_time = time.time()
-                    while time.time() - stop_time < math.pi:
-                        self.publishCtrlCmd(0, self.angle, self.flag)
+                    while time.time() - stop_time < 2.2:
+                        self.publishCtrlCmd(0, -9, self.flag)
+
+                    go_time = time.time()
+                    while time.time() - go_time < 1.0:
+                        self.publishCtrlCmd(7, -1, self.flag)
+
                     self.flag = False
 
             # ------------------------------------------- 미션 상태 관리 ------------------------------------------- #
 
 
-            self.speed = 6
+            self.speed = 5
             self.publishCtrlCmd(self.speed, self.angle, self.flag)
 
             self.rate.sleep()

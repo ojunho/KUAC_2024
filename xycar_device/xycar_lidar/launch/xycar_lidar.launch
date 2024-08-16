@@ -13,7 +13,7 @@
     <param name="range_min"    type="double" value="0.1" />
     <param name="range_max"    type="double" value="16.0" />
     <param name="ignore_array" type="string" value="" />
-    <param name="frequency"    type="double" value="10"/>
+    <param name="frequency"    type="double" value="30"/>
     <param name="samp_rate"    type="int"    value="5"/>
   </node>
 

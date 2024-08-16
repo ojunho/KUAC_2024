@@ -40,7 +40,7 @@ class TrafficDetection:
             cv2.createTrackbar('H_max_green1', 'Green Trackbars', 91, 179, self.nothing)
             cv2.createTrackbar('S_min_green1', 'Green Trackbars', 0, 255, self.nothing)
             cv2.createTrackbar('S_max_green1', 'Green Trackbars', 180, 255, self.nothing)
-            cv2.createTrackbar('V_min_green1', 'Green Trackbars', 218, 255, self.nothing)
+            cv2.createTrackbar('V_min_green1', 'Green Trackbars', 160, 255, self.nothing)
             cv2.createTrackbar('V_max_green1', 'Green Trackbars', 255, 255, self.nothing)
 
             rate = rospy.Rate(30)
@@ -90,9 +90,6 @@ class TrafficDetection:
 
         h, s, v = cv2.split(hsv_image)
 
-        # cv2.imshow('h', h)
-        # cv2.imshow('s', s)
-        # cv2.imshow('v', v)
 
         # Red trackbar values
         h_min_red1 = cv2.getTrackbarPos('H_min_red1', 'Red Trackbars')
@@ -118,8 +115,6 @@ class TrafficDetection:
         red_mask = cv2.inRange(hsv_image, lower_red1, upper_red1)
         green_mask = cv2.inRange(hsv_image, lower_green1, upper_green1)
 
-        # cv2.imshow('red_mask', red_mask)
-        # cv2.imshow('green_mask', green_mask)
         # 윤곽선 찾기
         red_contours, _ = cv2.findContours(red_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         green_contours, _ = cv2.findContours(green_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -138,15 +133,20 @@ class TrafficDetection:
         red_pixel_counts = np.count_nonzero(red_result)
         green_pixel_counts = np.count_nonzero(green_result)
 
-        # cv2.imshow('red_result', red_result)
-        # cv2.imshow('green_result', green_result)
+        cv2.imshow('red_mask', red_mask)
+        cv2.imshow('green_mask', green_mask)
+        cv2.imshow('red_result', red_result)
+        cv2.imshow('green_result', green_result)
+        cv2.imshow('h', h)
+        cv2.imshow('s', s)
+        cv2.imshow('v', v)
 
         # 무게중심 계산
         red_centers = self.get_contour_centers(red_filtered_contours)
         green_centers = self.get_contour_centers(green_filtered_contours)
 
-        # print("Red Centers: ", red_centers)
-        # print("Green Centers: ", green_centers)
+        print("Red Centers: ", red_centers)
+        print("Green Centers: ", green_centers)
 
 
 
