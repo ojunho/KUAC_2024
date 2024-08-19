@@ -199,11 +199,11 @@ class ArTagDriver:
 
                     stop_time = time.time()
                     while time.time() - stop_time < 2.2:
-                        self.publishCtrlCmd(0, -9, self.flag)
+                        self.publishCtrlCmd(0, 0, self.flag)
 
                     go_time = time.time()
                     while time.time() - go_time < 1.0:
-                        self.publishCtrlCmd(7, -1, self.flag)
+                        self.publishCtrlCmd(7, 0, self.flag)
 
                     self.flag = False
 
