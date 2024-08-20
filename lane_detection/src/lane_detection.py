@@ -60,6 +60,7 @@ class LaneDetection(object):
            
             # 원래 잘되던 버전
             self.pid = PID(0.7, 0.0008, 0.15)
+            # self.pid = PID(0.6, 0.002, 0.15)
 
             # self.pid = PID(0.69, 0.0008, 0.15)
             self.cv_image = None  # 카메라 이미지 초기화
@@ -71,6 +72,16 @@ class LaneDetection(object):
                 if self.cv_image is not None:  # 카메라 이미지가 있는 경우
                     cropped_image = roi_for_lane(self.cv_image)
                     gray_img, blurred_image, adaptive_gaussian, edged, closed_image = process_image(cropped_image)
+
+                    warped_gray_img = warper(gray_img)
+                    cv2.imshow('warped_gray_img', warped_gray_img)
+                    is_chessboard, _ = cv2.findChessboardCorners(warped_gray_img, (3, 3))
+
+                    print(is_chessboard)
+
+
+
+
                     warped_img = warper(closed_image)
                 
 

@@ -98,13 +98,13 @@ class StaticAvoidance():
                 else:
                     self.frames_without_obstacle += 1
                     if self.frames_without_obstacle > self.allowed_frames_without_obstacle:
-                        print('장애물이 없어져 카운트 감소 중...111')
+                        # print('장애물이 없어져 카운트 감소 중...111')
                         self.static_obstacle_cnt -= 1
                     #self.static_obstacle_cnt -= 1
             else:  
                 self.frames_without_obstacle += 1
                 if self.frames_without_obstacle > self.allowed_frames_without_obstacle:
-                    print('장애물이 없어져 카운트 감소 중...222')
+                    # print('장애물이 없어져 카운트 감소 중...222')
                     self.static_obstacle_cnt -= 1
                 #self.static_obstacle_cnt -= 1
 
@@ -195,19 +195,13 @@ class StaticAvoidance():
             # 다시 일정 기준 heading을 만족하도록 돌아오게 하기. 
 
 
-            rospy.loginfo(f"STATE: {self.state}")
-            rospy.loginfo(f"COUNT: {self.static_obstacle_cnt}")
-            # print('FLAG : ', self.is_static)
-
+            # rospy.loginfo(f"STATE: {self.state}")
+            # rospy.loginfo(f"COUNT: {self.static_obstacle_cnt}")
             # rospy.loginfo(f"GT: {self.gt_heading}")
             # rospy.loginfo(f"AVOID: {self.avoid_heading}")
             # rospy.loginfo(f"RETURN: {self.return_heading}")
 
-            # print('GT   : ', self.gt_heading)
-            # print('AVOID: ', self.avoid_heading)
-            # print('RETUR: ', self.return_heading)
-            # print('HEADI: ', self.local_heading)
-            # print()
+
 
 
             self.publishCtrlCmd(self.speed, self.angle, self.is_static)

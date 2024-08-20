@@ -162,7 +162,7 @@ class WaypointMaker:
             slope = 0  # 미리 정의된 slope 값 설정
             self.flag = False
         elif not self.is_orange:
-            rospy.loginfo(f"라바콘 아님. 라바콘 주행 하면 안됨. 주황색 없음")
+            # rospy.loginfo(f"라바콘 아님. 라바콘 주행 하면 안됨. 주황색 없음")
             slope = 0
             self.flag = False
         else:

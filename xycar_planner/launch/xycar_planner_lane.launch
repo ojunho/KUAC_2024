@@ -1,0 +1,14 @@
+<launch>
+  <!-- LANE 기반 주행  -->
+  <include file="$(find lane_detection)/launch/lane_detection.launch"/>
+
+  <!-- STATIC 주행 로직 진행 -->
+  <include file="$(find obstacle_detector)/launch/static_obstacle.launch"/>
+
+  <!-- RUBBERCONE 주행 로직 진행 -->
+  <include file="$(find obstacle_detector)/launch/rubbercone_drive.launch"/>
+  
+  <!-- PLANNER -->
+  <node name="xycar_planner" pkg="xycar_planner" type="xycar_planner_lane.py" output="screen"/>
+  
+</launch>

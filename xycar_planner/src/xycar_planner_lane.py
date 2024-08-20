@@ -98,9 +98,6 @@ class XycarPlanner:
         self.start_flag = False
         self.kill_flag = False
 
-        self.steer_queue_size = 30
-        self.steer_queue = np.zeros(self.steer_queue_size, dtype=int)
-
 
 
         self.pid = PID(0.7, 0.0008, 0.15)
@@ -108,40 +105,17 @@ class XycarPlanner:
         self.static_obstacles = []
         self.rubbercone_obstacles = []
 
+        self.steer_queue_size = 30
+        self.steer_queue = np.zeros(self.steer_queue_size, dtype=int)
+
         rate = rospy.Rate(30)  # 루프 주기 설정
         while not rospy.is_shutdown():  # ROS 노드가 종료될 때까지 반복
 
 
 
             # MODE 판별
-            if self.ar_mode_flag == True:
-                self.mode = 'AR'
-            elif self.rubbercone_mode_flag == True:
-                self.mode = 'RUBBERCONE'
-            elif self.static_mode_flag == True:
-                self.mode = 'STATIC'
-            else:
-                self.mode = 'LANE'
-                if (self.prev_mode == 'AR') and (self.start_flag == False):
-                    self.start_flag = True
 
-                    stop_time = time.time()
-                    while time.time() - stop_time < 2.2:
-                        self.publishCtrlCmd(0, 0)
-                        
-                        if self.kill_flag == False:
-                            os.system('rosnode kill /ar_tag_driver')
-                            os.system('rosnode kill /ar_track_alvar')
-                            os.system('rosnode kill /traffic_detection_node')
-                            self.kill_flag = True
-
-
-                    go_time = time.time()
-                    while time.time() - go_time < 1.0:
-                        self.publishCtrlCmd(7, 0)
-                    continue
-            
-            self.prev_mode = self.mode
+            self.mode = 'LANE'
 
             self.mode_pub.publish(self.mode)
 
@@ -166,12 +140,10 @@ class XycarPlanner:
 
             # --------------------------- 장애물 인지시 감속 --------------------------- # 
             if (len(self.static_obstacles) > 0) and (self.mode != "RUBBERCONE") and (self.mode != "AR"):
-
-                if (-10 <= np.mean(self.steer_queue) <= 10) and (np.var(self.steer_queue) < 150):
-                    # 특정 roi에 인지가 들어오면 일단 감속
-                    for obstacle in self.static_obstacles:
-                        if (0 < obstacle.x < 1.5) and (-0.25 <= obstacle.y <= 0.25):
-                            self.motor = 7
+                # 특정 roi에 인지가 들어오면 일단 감속
+                for obstacle in self.static_obstacles:
+                    if (0 < obstacle.x < 1.5) and (-0.25 <= obstacle.y <= 0.25):
+                        self.motor = 7
             # --------------------------- 장애물 인지시 감속 --------------------------- # 
 
             # --------------------------- 라바콘 인지시 감속 --------------------------- # 
@@ -182,8 +154,8 @@ class XycarPlanner:
             #             self.motor = 30
             # --------------------------- 라바콘 인지시 감속 --------------------------- # 
 
-            rospy.loginfo(f"MODE: {self.mode}")
-            rospy.loginfo(f"SPEED: {self.motor}")
+            # rospy.loginfo(f"MODE: {self.mode}")
+            # rospy.loginfo(f"SPEED: {self.motor}")
 
             self.publishCtrlCmd(self.motor, self.steer)
 
@@ -197,6 +169,13 @@ class XycarPlanner:
 
         self.steer_queue = np.roll(self.steer_queue, -1)
         self.steer_queue[-1] = servo_msg
+
+
+        print(f'ARR: {self.steer_queue}')
+        print(f'MEAN: {np.mean(self.steer_queue)}')
+        print(f'VAR: {np.var(self.steer_queue)}')
+        print(f'STD: {np.std(self.steer_queue)}')
+        print()
 
         self.ctrl_cmd_msg.speed = motor_msg  # 모터 속도 설정
         self.ctrl_cmd_msg.angle = servo_msg  # 조향각 설정
