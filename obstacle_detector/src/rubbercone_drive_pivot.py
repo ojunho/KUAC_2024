@@ -130,10 +130,10 @@ class WaypointMaker:
         else:
             self.rightCones.cones = self.rightCones.cones[:5]
             
-        for i, cone in enumerate(self.leftCones.cones):
-            self.publish_point_marker(cone, i, 0.1, 1.0, 0.68, 0.8)
-        for i, cone in enumerate(self.rightCones.cones):
-            self.publish_point_marker(cone, i+10, 0.1, 0.63, 0.82, 1.0)
+        # for i, cone in enumerate(self.leftCones.cones):
+        #     self.publish_point_marker(cone, i, 0.1, 1.0, 0.68, 0.8)
+        # for i, cone in enumerate(self.rightCones.cones):
+        #     self.publish_point_marker(cone, i+10, 0.1, 0.63, 0.82, 1.0)
 
     def set_waypoint_info(self):
         # l = self.leftCones.cones[0]
@@ -152,8 +152,8 @@ class WaypointMaker:
             y_vals.append(mid_y)
 
             midpoints.append(midpoint)
-        for i, midpoint in enumerate(midpoints):
-            self.publish_point_marker(midpoint, i+100, 0.05, 0.8, 0.7, 0.85)
+        # for i, midpoint in enumerate(midpoints):
+        #     self.publish_point_marker(midpoint, i+100, 0.05, 0.8, 0.7, 0.85)
 
         x_vals = np.array(x_vals)
         y_vals = np.array(y_vals)
@@ -173,11 +173,6 @@ class WaypointMaker:
         angle_deg = -math.degrees(angle_rad)
         # print(angle_deg)
         self.publishCtrlCmd(30, angle_deg, self.flag)
-
-
-        # waypoints = self.interpolate_objects(midpoints)
-        # for i, point in enumerate(waypoints):
-        #     self.publish_point_marker(point, i+200, 0.01, 1.0, 1.0, 1.0)
 
     def interpolate_objects(self, objects, points_per_segment=50):
         interpolated_objects = []
@@ -225,7 +220,7 @@ class WaypointMaker:
         marker.color.b = b
         marker.color.a = 1.0
 
-        self.maker_pub.publish(marker)
+        # self.maker_pub.publish(marker)
             
 
 def main():

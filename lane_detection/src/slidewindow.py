@@ -1,8 +1,6 @@
 import cv2  # OpenCV 라이브러리 임포트
 import numpy as np  # NumPy 라이브러리 임포트
-import matplotlib.pyplot as plt  # matplotlib 라이브러리 임포트
 from matplotlib.pyplot import *  # matplotlib.pyplot 모듈 임포트
-import math  # 수학 라이브러리 임포트
 
 TOTAL_CNT = 50  # 총 카운트 설정
 

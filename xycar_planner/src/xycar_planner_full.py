@@ -5,27 +5,19 @@
 from __future__ import print_function
 
 from xycar_msgs.msg import xycar_motor  # xycar 모터 메시지 모듈 임포트
-from sensor_msgs.msg import Imu  # IMU 데이터 메시지 모듈 임포트
-from std_msgs.msg import Float32, Int32, String  # Float32 메시지 모듈 임포트
-
-
-from math import radians, pi  # 각도를 라디안으로 변환하는 함수 임포트
+from std_msgs.msg import String  # Float32 메시지 모듈 임포트
 
 import cv2  # OpenCV 라이브러리 임포트
-import numpy as np  # NumPy 라이브러리 임포트
-import math
 
-from cv_bridge import CvBridge, CvBridgeError  # CV-Bridge 라이브러리 임포트
+from cv_bridge import CvBridge  # CV-Bridge 라이브러리 임포트
 
 import rospy  # ROS 파이썬 라이브러리 임포트
-from sensor_msgs.msg import Image, CompressedImage  # 이미지 데이터 메시지 모듈 임포트
 
 from obstacle_detector.msg import Obstacles
 
-import tf
+import os
 
-
-import tkinter as tk
+import time
 
 class Obstacle:
     def __init__(self, x=None, y=None, distance=None):
@@ -99,6 +91,10 @@ class XycarPlanner:
 
         # mode
         self.mode = ''
+        self.prev_mode = ''
+
+        self.start_flag = False
+        self.kill_flag = False
 
 
 
@@ -121,6 +117,26 @@ class XycarPlanner:
                 self.mode = 'STATIC'
             else:
                 self.mode = 'LANE'
+                if (self.prev_mode == 'AR') and (self.start_flag == False):
+                    self.start_flag = True
+
+                    stop_time = time.time()
+                    while time.time() - stop_time < 2.2:
+                        self.publishCtrlCmd(0, 0)
+                        
+                        if self.kill_flag == False:
+                            os.system('rosnode kill /ar_tag_driver')
+                            os.system('rosnode kill /ar_track_alvar')
+                            os.system('rosnode kill /traffic_detection_node')
+                            self.kill_flag = True
+
+
+                    go_time = time.time()
+                    while time.time() - go_time < 1.0:
+                        self.publishCtrlCmd(7, 0)
+                    continue
+            
+            self.prev_mode = self.mode
 
             self.mode_pub.publish(self.mode)
 

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from __future__ import print_function
-from math import radians, pi
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
 import rospy
@@ -86,6 +85,7 @@ class TrafficDetection:
         return centers
 
     def detect_traffic_light(self, image):
+        cv2.imshow("src", image)
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
         h, s, v = cv2.split(hsv_image)
@@ -145,9 +145,6 @@ class TrafficDetection:
         red_centers = self.get_contour_centers(red_filtered_contours)
         green_centers = self.get_contour_centers(green_filtered_contours)
 
-        print("Red Centers: ", red_centers)
-        print("Green Centers: ", green_centers)
-
 
 
         # 중심 좌표 배열로 변환
@@ -155,9 +152,9 @@ class TrafficDetection:
         green_centers_flattened = [coord for center in green_centers for coord in center]
 
 
-
         msg = Int64MultiArray()
         msg.data = [red_pixel_counts, green_pixel_counts]
+
         self.traffic_light_pub.publish(msg)
 
         red_centers_msg = Int64MultiArray()

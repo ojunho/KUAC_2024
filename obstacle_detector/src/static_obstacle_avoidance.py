@@ -3,10 +3,8 @@
 
 import rospy
 from obstacle_detector.msg import Obstacles
-from std_msgs.msg import Int32, Float64, Int32MultiArray, String
+from std_msgs.msg import Float64, String
 from xycar_msgs.msg import xycar_motor
-import math
-import time
 
 class Obstacle:
     def __init__(self, x=None, y=None, distance=None):
@@ -56,6 +54,8 @@ class StaticAvoidance():
 
         self.static_obstacle_cnt = 0
         self.static_obstacle_cnt_threshold = 15
+        self.frames_without_obstacle = 0
+        self.allowed_frames_without_obstacle = 5
 
         self.real_heading = None
         self.gt_heading = None
@@ -92,11 +92,21 @@ class StaticAvoidance():
                     if (0 < obstacle.x < 1.2) and (-0.2 <= obstacle.y <= 0.2):
                         self.static_obstacle_cnt += 1
                         self.update_last_n_obstacles_y(obstacle.y, self.len_last_n_obstacles_y)
+                        #print(f"거리: {self.obstacles[0].distance:.4f}")
+                        self.frames_without_obstacle = 0
                         break
                 else:
+                    self.frames_without_obstacle += 1
+                    if self.frames_without_obstacle > self.allowed_frames_without_obstacle:
+                        print('장애물이 없어져 카운트 감소 중...111')
+                        self.static_obstacle_cnt -= 1
+                    #self.static_obstacle_cnt -= 1
+            else:  
+                self.frames_without_obstacle += 1
+                if self.frames_without_obstacle > self.allowed_frames_without_obstacle:
+                    print('장애물이 없어져 카운트 감소 중...222')
                     self.static_obstacle_cnt -= 1
-            else:
-                self.static_obstacle_cnt -= 1
+                #self.static_obstacle_cnt -= 1
 
             # 완전히 차선 폭에 들어오는 장애물이 몇번 연속으로 찍힌다? cnt++ -> 특정 숫자 이상이면 그러면 아예 정적 모드
             # 하지만 계속 안들어오면 비례하게 cnt--

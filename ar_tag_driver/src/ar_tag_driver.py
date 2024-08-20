@@ -8,10 +8,11 @@ from ar_track_alvar_msgs.msg import AlvarMarkers
 
 from std_msgs.msg import Int64MultiArray
 
-import tf.transformations
 import math
 
 import time
+
+import os
 
 class ArTag:
     def __init__(self, marker):
@@ -145,27 +146,6 @@ class ArTagDriver:
                     # ar 태그를 추종하며 따라가기
                     if len(self.sorted_ar_list) > 0:
 
-
-                        
-
-                        # source_min = 0.9
-                        # source_max = 1.0
-                        # target_min = 0.1
-                        # target_max = 0.25
-
-                        # # 선형 변환 적용
-                        # x_offset = target_min + (self.closest_ar.q_x - source_min) * (target_max - target_min) / (source_max - source_min)
-
-                        # rospy.loginfo(f"QX: {self.closest_ar.q_x}")
-                        # rospy.loginfo(f"x_offset: {x_offset}")
-
-
-
-
-
-                        # self.angle = int(math.degrees(17.5 * (self.closest_ar.x - 0.2) / (self.closest_ar.z)))
-
-
                         if self.closest_ar.z < 1.5:
                             self.angle = int(math.degrees(18.75 * (self.closest_ar.x - 0.19) / (self.closest_ar.z)))
 
@@ -179,7 +159,7 @@ class ArTagDriver:
 
                     elif len(self.sorted_ar_list) == 0: 
 
-                        self.angle = -9
+                        self.angle = -2
             # ------------------------------------------- 신호등 통과 이후 ------------------------------------------- #
 
 
@@ -197,13 +177,16 @@ class ArTagDriver:
             
                 if self.ar_tag_not_detected_count >= ar_tag_not_detected_count_threshold:
 
-                    stop_time = time.time()
-                    while time.time() - stop_time < 2.2:
-                        self.publishCtrlCmd(0, 0, self.flag)
+                    # os.system('rosnode kill /ar_track_alvar')
+                    # os.system('rosnode kill /traffic_detection_node')
 
-                    go_time = time.time()
-                    while time.time() - go_time < 1.0:
-                        self.publishCtrlCmd(7, 0, self.flag)
+                    # stop_time = time.time()
+                    # while time.time() - stop_time < 2.2:
+                    #     self.publishCtrlCmd(0, 0, self.flag)
+
+                    # go_time = time.time()
+                    # while time.time() - go_time < 1.0:
+                    #     self.publishCtrlCmd(7, 0, self.flag)
 
                     self.flag = False
 
@@ -248,10 +231,12 @@ class ArTagDriver:
         self.red_light_count = msg.data[0]
         self.green_light_count = msg.data[1]
 
-        if (self.green_light_count >= 300) and (self.red_light_count <= 5):
+        if (self.red_light_count >= 300) and (self.green_light_count <= 5):
+            self.traffic_light = 'Red'
+        elif self.green_light_count >= 300:
             self.traffic_light = 'Green'
         else:  
-            self.traffic_light = 'Red'
+            self.traffic_light = ''
 
     def red_centers_CB(self, msg):
         self.red_centers = msg.data

@@ -6,12 +6,8 @@ from __future__ import print_function
 
 from xycar_msgs.msg import xycar_motor  # xycar 모터 메시지 모듈 임포트
 
-from math import radians, pi  # 각도를 라디안으로 변환하는 함수 임포트
-
 from slidewindow import SlideWindow  # 슬라이드 윈도우 알고리즘 모듈 임포트
 import cv2  # OpenCV 라이브러리 임포트
-import numpy as np  # NumPy 라이브러리 임포트
-import math
 
 from cv_bridge import CvBridge, CvBridgeError  # CV-Bridge 라이브러리 임포트
 
