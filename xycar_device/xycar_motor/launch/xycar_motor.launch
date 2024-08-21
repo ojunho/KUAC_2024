@@ -2,9 +2,12 @@
 
   <arg name="motor_type" default="0" />
   <arg name="angle_offset" default="0" />
+  <arg name="version" default="safe"/>
   
   <group unless="$(arg motor_type)">
-    <include file="$(find vesc_driver)/launch/vesc_drive_xycar_motor.launch" />
+    <include file="$(find vesc_driver)/launch/vesc_drive_xycar_motor.launch">
+      <arg name="version" value="$(arg version)"/>
+    </include>
   </group>
   
   <node pkg="xycar_motor" type="xycar_motor.py" name="xycar_motor" output="screen" >

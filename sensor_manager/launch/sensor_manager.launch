@@ -1,6 +1,12 @@
 <launch>
+
+    <!-- 주행 모드 파라미터 (fast 또는 safe) -->
+    <arg name="version" default="safe"/>
+
     <!-- motor node -->
-    <include file="$(find xycar_motor)/launch/xycar_motor.launch" />
+    <include file="$(find xycar_motor)/launch/xycar_motor.launch">
+        <arg name="version" value="$(arg version)"/>
+    </include>
 
     <!-- IMU node -->
     <include file="$(find xycar_imu)/launch/xycar_imu.launch" />

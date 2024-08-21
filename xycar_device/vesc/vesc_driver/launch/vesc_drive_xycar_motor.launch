@@ -1,6 +1,16 @@
 <!-- -*- mode: XML -*- -->
 <launch>
-  <rosparam file="$(find vesc_driver)/yaml/vesc.yaml" command="load" />
+  <arg name="version" default="safe"/>
+
+  <!-- version에 따라 다른 yaml 파일을 로드 -->
+  <group if="$(eval arg('version') == 'safe')">
+    <rosparam file="$(find vesc_driver)/yaml/vesc.yaml" command="load" />
+  </group>
+  
+  <group if="$(eval arg('version') == 'fast')">
+    <rosparam file="$(find vesc_driver)/yaml/vesc_fast.yaml" command="load" />
+  </group>
+
   <node pkg="vesc_ackermann" type="ackermann_to_vesc_node" name="ackermann_to_vesc">
     <remap from="ackermann_cmd" to="/ackermann_cmd" />
   </node>

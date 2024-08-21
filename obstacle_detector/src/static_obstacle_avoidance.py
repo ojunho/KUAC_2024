@@ -74,16 +74,17 @@ class StaticAvoidance():
         self.version = rospy.get_param('~version', 'safe')
 
         if self.version == 'fast':
-            self.speed = 5 # 일단
+            self.speed = 7 # 일단
         else:
             self.speed = 7
+
+        rospy.loginfo(f"STATIC: {self.version}")
 
         
 
         rate = rospy.Rate(30)
         while not rospy.is_shutdown():
 
-            rospy.loginfo(f"MODE: {self.mode}")
 
             if self.mode == 'RUBBERCONE' or self.mode == 'AR':
                 continue

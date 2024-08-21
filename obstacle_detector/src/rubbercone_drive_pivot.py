@@ -58,9 +58,11 @@ class WaypointMaker:
 
         self.version = rospy.get_param('~version', 'safe')
         if self.version == 'fast':
-            self.motor = 20 # 일단
+            self.motor = 12 # 일단
         else:
             self.motor = 30
+
+        rospy.loginfo(f"RUBBERCONE: {self.version}")
         
     def reset_pivot(self, left="LEFT"):
         if left == "LEFT":

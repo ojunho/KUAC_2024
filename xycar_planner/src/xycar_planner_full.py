@@ -82,6 +82,8 @@ class XycarPlanner:
 
         self.version = rospy.get_param('~version', 'safe')
 
+        rospy.loginfo(f"PLANNER_FULL: {self.version}")
+
         self.steer = 0.0  # 조향각 초기화
         self.motor = 0.0  # 모터 속도 초기화
 
@@ -174,7 +176,7 @@ class XycarPlanner:
                         if (0 < obstacle.x < 1.5) and (-0.25 <= obstacle.y <= 0.25):
 
                             if self.version == 'fast':
-                                self.motor = 5
+                                self.motor = 7
                             else:
                                 self.motor = 7
             # --------------------------- 장애물 인지시 감속 --------------------------- # 
@@ -187,7 +189,9 @@ class XycarPlanner:
             #             self.motor = 30
             # --------------------------- 라바콘 인지시 감속 --------------------------- # 
 
-            # rospy.loginfo(f"MODE: {self.mode}")
+            rospy.loginfo(f"MODE: {self.mode}")
+            rospy.loginfo(f"SPEED: {self.motor}")
+
 
             self.publishCtrlCmd(self.motor, self.steer)
 

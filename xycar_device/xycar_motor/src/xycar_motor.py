@@ -62,6 +62,7 @@ class motor:
     def set_vesc(self):
         rospy.Subscriber("/sensors/core", VescStateStamped, self.VescStateCallback, queue_size=1)
         speed_max = float(rospy.get_param("/vesc_driver/speed_max"))
+        print('speed_max', speed_max)
         speed_min = float(rospy.get_param("/vesc_driver/speed_min"))
         speed_to_erpm_gain = float(rospy.get_param("/speed_to_erpm_gain"))
         self.vesc_smax = speed_max / speed_to_erpm_gain

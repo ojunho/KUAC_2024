@@ -43,6 +43,8 @@ class ArTagDriver:
 
         self.version = rospy.get_param('~version', 'safe')
 
+        rospy.loginfo(f"AR: {self.version}")
+
         # for ar tag
         self.sorted_ar_list = []
         self.k = 12.5

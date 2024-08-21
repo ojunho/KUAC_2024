@@ -57,12 +57,19 @@ class LaneDetection(object):
 
             self.version = rospy.get_param('~version', 'safe')
 
+            rospy.loginfo(f"LANE: {self.version}")
+
             
             self.steer = 0.0  # 조향각 초기화
             self.motor = 0.0  # 모터 속도 초기화
            
             # 원래 잘되던 버전
-            self.pid = PID(0.7, 0.0008, 0.15)
+            if self.version == 'fast':
+                self.pid = PID(0.79, 0.001, 0.21)
+            else:
+                self.pid = PID(0.7, 0.0008, 0.15)
+
+
             # self.pid = PID(0.6, 0.002, 0.15)
 
             # self.pid = PID(0.69, 0.0008, 0.15)
