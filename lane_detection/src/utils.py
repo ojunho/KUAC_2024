@@ -66,10 +66,10 @@ def warper(image):
 
     src_points = np.float32([src_point1, src_point2, src_point3, src_point4])  # 원본 이미지에서의 점들
     
-    dst_point1 = [x // 4 + 7, y]  # 변환 이미지에서의 왼쪽 아래 점
-    dst_point2 = [x // 4 + 7, 0]  # 변환 이미지에서의 왼쪽 위 점
-    dst_point3 = [x // 4 * 3 + 7, 0]  # 변환 이미지에서의 오른쪽 위 점
-    dst_point4 = [x // 4 * 3 + 7, y]  # 변환 이미지에서의 오른쪽 아래 점
+    dst_point1 = [x // 4 + 9, y]  # 변환 이미지에서의 왼쪽 아래 점
+    dst_point2 = [x // 4 + 9, 0]  # 변환 이미지에서의 왼쪽 위 점
+    dst_point3 = [x // 4 * 3 + 9, 0]  # 변환 이미지에서의 오른쪽 위 점
+    dst_point4 = [x // 4 * 3 + 9, y]  # 변환 이미지에서의 오른쪽 아래 점
 
     dst_points = np.float32([dst_point1, dst_point2, dst_point3, dst_point4])  # 변환 이미지에서의 점들
     
