@@ -6,7 +6,7 @@ from __future__ import print_function
 
 from xycar_msgs.msg import xycar_motor  # xycar 모터 메시지 모듈 임포트
 
-from slidewindow import SlideWindow  # 슬라이드 윈도우 알고리즘 모듈 임포트
+from slidewindow_both_lane import SlideWindow  # 슬라이드 윈도우 알고리즘 모듈 임포트
 import cv2  # OpenCV 라이브러리 임포트
 
 from cv_bridge import CvBridge, CvBridgeError  # CV-Bridge 라이브러리 임포트
@@ -72,16 +72,6 @@ class LaneDetection(object):
                 if self.cv_image is not None:  # 카메라 이미지가 있는 경우
                     cropped_image = roi_for_lane(self.cv_image)
                     gray_img, blurred_image, adaptive_gaussian, edged, closed_image = process_image(cropped_image)
-
-                    warped_gray_img = warper(gray_img)
-                    cv2.imshow('warped_gray_img', warped_gray_img)
-                    is_chessboard, _ = cv2.findChessboardCorners(warped_gray_img, (3, 3))
-
-                    print(is_chessboard)
-
-
-
-
                     warped_img = warper(closed_image)
                 
 

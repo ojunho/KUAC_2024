@@ -39,23 +39,37 @@ def warper(image):
     """원근 변환을 수행하는 함수"""
     y, x = image.shape[0:2]
 
-    left_margin_1 = 0
-    top_margin_1 = 130
+    # left_margin_1 = 0
+    # top_margin_1 = 130
     
-    left_margin_2 = 180
-    top_margin_2 = 54
+    # left_margin_2 = 180
+    # top_margin_2 = 54
 
-    src_point1 = [left_margin_1, top_margin_1]  # 왼쪽 아래 점
-    src_point2 = [left_margin_2, top_margin_2]  # 왼쪽 위 점
-    src_point3 = [x - left_margin_2, top_margin_2]  # 오른쪽 위 점
-    src_point4 = [x - left_margin_1, top_margin_1]  # 오른쪽 아래 점
+    left_margin_1 = 0
+    top_margin_1 = 110
+    
+    left_margin_2 = 185
+    top_margin_2 = 39
+
+    # src_point1 = [left_margin_1, top_margin_1]  # 왼쪽 아래 점
+    # src_point2 = [left_margin_2, top_margin_2]  # 왼쪽 위 점
+    # # src_point3 = [x - left_margin_2, top_margin_2]  # 오른쪽 위 점
+    # # src_point4 = [x - left_margin_1, top_margin_1]  # 오른쪽 아래 점
+
+    # src_point3 = [460, top_margin_2]  # 오른쪽 위 점
+    # src_point4 = [635, top_margin_1]  # 오른쪽 아래 점
+
+    src_point1 = [0, 126]  # 왼쪽 아래 점
+    src_point2 = [175, 46]  # 왼쪽 위 점
+    src_point3 = [456, 38]  # 오른쪽 위 점
+    src_point4 = [640, 103]  # 오른쪽 아래 점
 
     src_points = np.float32([src_point1, src_point2, src_point3, src_point4])  # 원본 이미지에서의 점들
     
-    dst_point1 = [x // 4, y]  # 변환 이미지에서의 왼쪽 아래 점
-    dst_point2 = [x // 4, 0]  # 변환 이미지에서의 왼쪽 위 점
-    dst_point3 = [x // 4 * 3, 0]  # 변환 이미지에서의 오른쪽 위 점
-    dst_point4 = [x // 4 * 3, y]  # 변환 이미지에서의 오른쪽 아래 점
+    dst_point1 = [x // 4 + 7, y]  # 변환 이미지에서의 왼쪽 아래 점
+    dst_point2 = [x // 4 + 7, 0]  # 변환 이미지에서의 왼쪽 위 점
+    dst_point3 = [x // 4 * 3 + 7, 0]  # 변환 이미지에서의 오른쪽 위 점
+    dst_point4 = [x // 4 * 3 + 7, y]  # 변환 이미지에서의 오른쪽 아래 점
 
     dst_points = np.float32([dst_point1, dst_point2, dst_point3, dst_point4])  # 변환 이미지에서의 점들
     

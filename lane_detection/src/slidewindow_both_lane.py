@@ -45,9 +45,9 @@ class SlideWindow:
         win_l_w_l = 180 - 65  # 왼쪽 윈도우 왼쪽 경계
         win_l_w_r = 180 + 50  # 왼쪽 윈도우 오른쪽 경계
         win_r_w_l = 480 - 65  # 오른쪽 윈도우 왼쪽 경계
-        win_r_w_r = 498  # 오른쪽 윈도우 오른쪽 경계
+        win_r_w_r = 480 + 50 # 498  # 오른쪽 윈도우 오른쪽 경계
         
-        circle_height = 70
+        circle_height = 100
 
         # first location and segmenation location finder
         # draw line
