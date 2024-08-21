@@ -1,14 +1,26 @@
 <launch>
+
+  <!-- 주행 모드 파라미터 (fast 또는 safe) -->
+  <arg name="version" default="safe"/>
+
   <!-- LANE 기반 주행  -->
-  <include file="$(find lane_detection)/launch/lane_detection.launch"/>
+  <include file="$(find lane_detection)/launch/lane_detection.launch">
+    <arg name="version" value="$(arg version)"/>
+  </include>
 
   <!-- STATIC 주행 로직 진행 -->
-  <include file="$(find obstacle_detector)/launch/static_obstacle.launch"/>
+  <include file="$(find obstacle_detector)/launch/static_obstacle.launch">
+    <arg name="version" value="$(arg version)"/>
+  </include>
 
   <!-- RUBBERCONE 주행 로직 진행 -->
-  <include file="$(find obstacle_detector)/launch/rubbercone_drive.launch"/>
-  
+  <include file="$(find obstacle_detector)/launch/rubbercone_drive.launch">
+    <arg name="version" value="$(arg version)"/>
+  </include>
+
   <!-- PLANNER -->
-  <node name="xycar_planner" pkg="xycar_planner" type="xycar_planner_half.py" output="screen"/>
+  <node name="xycar_planner" pkg="xycar_planner" type="xycar_planner_half.py" output="screen">
+    <param name="version" value="$(arg version)"/>
+  </node>
   
 </launch>

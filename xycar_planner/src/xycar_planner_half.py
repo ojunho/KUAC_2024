@@ -156,8 +156,7 @@ class XycarPlanner:
             #             self.motor = 30
             # --------------------------- 라바콘 인지시 감속 --------------------------- # 
 
-            rospy.loginfo(f"MODE: {self.mode}")
-            rospy.loginfo(f"SPEED: {self.motor}")
+            # rospy.loginfo(f"MODE: {self.mode}")
 
 
             self.publishCtrlCmd(self.motor, self.steer)

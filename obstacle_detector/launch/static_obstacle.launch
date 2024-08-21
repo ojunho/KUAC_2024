@@ -1,3 +1,6 @@
 <launch>
-    <node name="static_obstacle_avoidance" pkg="obstacle_detector" type="static_obstacle_avoidance.py" output="screen"/>
+    <arg name="version" default="safe"/>
+    <node name="static_obstacle_avoidance" pkg="obstacle_detector" type="static_obstacle_avoidance.py" output="screen">
+        <param name="version" value="$(arg version)"/>
+    </node>
 </launch>

@@ -1,3 +1,6 @@
 <launch>
-  <node name="rubbercone_drive" pkg="obstacle_detector" type="rubbercone_drive_pivot.py" output="screen"/>
+  <arg name="version" default="safe"/>
+  <node name="rubbercone_drive" pkg="obstacle_detector" type="rubbercone_drive_pivot.py" output="screen">
+    <param name="version" value="$(arg version)"/>
+  </node>
 </launch>

@@ -54,6 +54,9 @@ class LaneDetection(object):
             self.ctrl_cmd_msg = xycar_motor()  # 모터 제어 메시지 초기화
             
             self.slidewindow = SlideWindow()  # 슬라이드 윈도우 알고리즘 초기화
+
+            self.version = rospy.get_param('~version', 'safe')
+
             
             self.steer = 0.0  # 조향각 초기화
             self.motor = 0.0  # 모터 속도 초기화
@@ -86,7 +89,10 @@ class LaneDetection(object):
                     
                     self.steer = round(self.pid.pid_control(x_location - 320))  # PID 제어를 통한 각도 계산
 
-                    self.motor = 30 # 모터 속도 설정 30
+                    if self.version == 'fast':
+                        self.motor = 30 # 모터 속도 설정 30
+                    else:
+                        self.motor = 30
                     
                     self.publishCtrlCmd(self.motor, self.steer)  # 제어 명령 퍼블리시
 

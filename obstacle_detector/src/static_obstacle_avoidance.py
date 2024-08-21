@@ -71,23 +71,28 @@ class StaticAvoidance():
 
         self.mode = ''
 
+        self.version = rospy.get_param('~version', 'safe')
+
+        if self.version == 'fast':
+            self.speed = 5 # 일단
+        else:
+            self.speed = 7
+
         
 
         rate = rospy.Rate(30)
         while not rospy.is_shutdown():
 
-            # rospy.loginfo(f"self.avg_y: {self.avg_y}")
-
+            rospy.loginfo(f"MODE: {self.mode}")
 
             if self.mode == 'RUBBERCONE' or self.mode == 'AR':
                 continue
 
-            self.speed = 7
+
+
             if len(self.obstacles) > 0:
                 # 특정 roi에 인지가 들어오면 일단 감속
                 for obstacle in self.obstacles:
-                    # if (0 < obstacle.x < 2.0) and (-0.45 <= obstacle.y <= 0.45):
-                    #     self.speed = 7
                     
                     if (0 < obstacle.x < 1.2) and (-0.2 <= obstacle.y <= 0.2):
                         self.static_obstacle_cnt += 1

@@ -1,3 +1,6 @@
 <launch>
-  <node name="lane_detection" pkg="lane_detection" type="lane_detection.py" output="screen"/>
+  <arg name="version" default="safe"/>
+  <node name="lane_detection" pkg="lane_detection" type="lane_detection.py" output="screen">
+    <param name="version" value="$(arg version)"/>
+  </node>
 </launch>

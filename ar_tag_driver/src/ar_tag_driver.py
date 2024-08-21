@@ -41,6 +41,8 @@ class ArTagDriver:
 
         self.ctrl_cmd_msg_ar = xycar_motor()
 
+        self.version = rospy.get_param('~version', 'safe')
+
         # for ar tag
         self.sorted_ar_list = []
         self.k = 12.5
@@ -193,7 +195,11 @@ class ArTagDriver:
             # ------------------------------------------- 미션 상태 관리 ------------------------------------------- #
 
 
-            self.speed = 5
+            if self.version == 'fast':
+                self.speed = 5
+            else:
+                self.speed = 5
+            
             self.publishCtrlCmd(self.speed, self.angle, self.flag)
 
             self.rate.sleep()

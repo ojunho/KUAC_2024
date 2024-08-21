@@ -56,6 +56,12 @@ class WaypointMaker:
 
         self.is_orange = False
 
+        self.version = rospy.get_param('~version', 'safe')
+        if self.version == 'fast':
+            self.motor = 20 # 일단
+        else:
+            self.motor = 30
+        
     def reset_pivot(self, left="LEFT"):
         if left == "LEFT":
             return Object(0, 0.5)
@@ -172,7 +178,9 @@ class WaypointMaker:
         angle_rad = math.atan(slope)
         angle_deg = -math.degrees(angle_rad)
         # print(angle_deg)
-        self.publishCtrlCmd(30, angle_deg, self.flag)
+
+
+        self.publishCtrlCmd(self.motor, angle_deg, self.flag)
 
     def interpolate_objects(self, objects, points_per_segment=50):
         interpolated_objects = []

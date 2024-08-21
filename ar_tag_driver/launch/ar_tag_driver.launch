@@ -1,3 +1,8 @@
 <launch>
-    <node name="ar_tag_driver" pkg="ar_tag_driver" type="ar_tag_driver.py" output="screen"/>
+    <arg name="version" default="safe"/>
+
+    <node name="ar_tag_driver" pkg="ar_tag_driver" type="ar_tag_driver.py" output="screen">
+        <param name="version" value="$(arg version)"/>
+    </node>
+
 </launch>

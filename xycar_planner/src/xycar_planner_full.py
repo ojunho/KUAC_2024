@@ -80,6 +80,7 @@ class XycarPlanner:
 
         self.bridge = CvBridge()  # CV-Bridge 초기화
 
+        self.version = rospy.get_param('~version', 'safe')
 
         self.steer = 0.0  # 조향각 초기화
         self.motor = 0.0  # 모터 속도 초기화
@@ -171,7 +172,11 @@ class XycarPlanner:
                     # 특정 roi에 인지가 들어오면 일단 감속
                     for obstacle in self.static_obstacles:
                         if (0 < obstacle.x < 1.5) and (-0.25 <= obstacle.y <= 0.25):
-                            self.motor = 7
+
+                            if self.version == 'fast':
+                                self.motor = 5
+                            else:
+                                self.motor = 7
             # --------------------------- 장애물 인지시 감속 --------------------------- # 
 
             # --------------------------- 라바콘 인지시 감속 --------------------------- # 
@@ -182,8 +187,7 @@ class XycarPlanner:
             #             self.motor = 30
             # --------------------------- 라바콘 인지시 감속 --------------------------- # 
 
-            rospy.loginfo(f"MODE: {self.mode}")
-            rospy.loginfo(f"SPEED: {self.motor}")
+            # rospy.loginfo(f"MODE: {self.mode}")
 
             self.publishCtrlCmd(self.motor, self.steer)
 
