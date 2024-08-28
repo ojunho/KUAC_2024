@@ -65,7 +65,12 @@ class LaneDetection(object):
            
             # 원래 잘되던 버전
             if self.version == 'fast':
-                self.pid = PID(0.79, 0.001, 0.21)
+                # self.pid = PID(0.79, 0.001, 0.21)
+
+                self.pid = PID(0.78, 0.0005, 0.405) # 0828 아침 잘되는버전
+
+                # self.pid = PID(0.78, 0.0005, 0.40375)
+                # self.pid = PID(0.8, 0.0005, 0.43)
             else:
                 self.pid = PID(0.7, 0.0008, 0.15)
 

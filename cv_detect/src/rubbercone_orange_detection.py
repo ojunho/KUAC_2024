@@ -71,7 +71,7 @@ class RubberconeOrangeDetection:
 
         # 윤곽선 찾기
         orange_pixel_counts = np.count_nonzero(orange_mask)
-
+        # rospy.loginfo(f'orange_pixel_counts: {orange_pixel_counts}')
         #
         if orange_pixel_counts > 10000:
             self.is_orange_msg.data = True

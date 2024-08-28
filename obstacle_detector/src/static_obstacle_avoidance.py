@@ -67,11 +67,12 @@ class StaticAvoidance():
 
         self.last_n_obstacles_y = []
         self.len_last_n_obstacles_y = 5
-        self.avg_y = None
+        # self.avg_y = None
 
         self.mode = ''
 
         self.version = rospy.get_param('~version', 'safe')
+        self.direction = rospy.get_param('~direction', 'left')
 
         if self.version == 'fast':
             self.speed = 7 # 일단
@@ -85,7 +86,6 @@ class StaticAvoidance():
         rate = rospy.Rate(30)
         while not rospy.is_shutdown():
 
-
             if self.mode == 'RUBBERCONE' or self.mode == 'AR':
                 continue
 
@@ -95,7 +95,7 @@ class StaticAvoidance():
                 # 특정 roi에 인지가 들어오면 일단 감속
                 for obstacle in self.obstacles:
                     
-                    if (0 < obstacle.x < 1.2) and (-0.2 <= obstacle.y <= 0.2):
+                    if (0 < obstacle.x < 1.2) and (-0.25 <= obstacle.y <= 0.25):
                         self.static_obstacle_cnt += 1
                         self.update_last_n_obstacles_y(obstacle.y, self.len_last_n_obstacles_y)
                         #print(f"거리: {self.obstacles[0].distance:.4f}")
@@ -126,7 +126,7 @@ class StaticAvoidance():
             if self.state == 'L':
                 if self.static_obstacle_cnt == self.static_obstacle_cnt_threshold:
 
-                    self.avg_y = sum(self.last_n_obstacles_y) / len(self.last_n_obstacles_y)
+                    # self.avg_y = sum(self.last_n_obstacles_y) / len(self.last_n_obstacles_y)
                     # 가운데 : 0.039
                     # 왼쪽   : 0.149, 0.147
 
@@ -134,14 +134,25 @@ class StaticAvoidance():
                     self.gt_heading = self.real_heading
 
                     # 장애물의 위치가 중간 or 오른쪽 -> 왼쪽으로 회피
-                    if self.avg_y < 0: # -> 장애물의 위치 기반 방향 선택
+                    if self.direction == 'left': # -> 장애물의 위치 기반 방향 선택
                         self.avoid_heading = 30
                         self.return_heading = -20
 
                     # 장애물의 위치가 왼쪽 -> 오른쪽으로 회피 
                     else:
-                        self.avoid_heading = -27.5
-                        self.return_heading = 20
+                        # 잘 되지만 크게 피함
+                        # self.avoid_heading = -27.5
+                        # self.return_heading = 20
+
+
+                        if self.version == 'fast':
+                            self.avoid_heading = -25
+                            self.return_heading = 10
+                        else:
+                            self.avoid_heading = -25
+                            self.return_heading = 10
+
+
 
                     # flag
                     self.state = 'A'
@@ -151,16 +162,16 @@ class StaticAvoidance():
                 if self.local_heading != None:
 
                     # 장애물의 위치가 중간 or 오른쪽 -> 왼쪽으로 회피
-                    if self.avg_y < 0: # -> 장애물의 위치 기반 방향 선택
+                    if self.direction == 'left': # -> 장애물의 위치 기반 방향 선택
                         if (self.avoid_heading > self.local_heading): # 목표 heading에 도달하지 못했으면 좌조향
-                            self.angle = -15 * abs(self.local_heading - self.avoid_heading)
+                            self.angle = -13.5 * abs(self.local_heading - self.avoid_heading)
                         else:
                             self.state = 'R'
 
                     # 장애물의 위치가 왼쪽 -> 오른쪽으로 회피 
                     else :
                         if (self.avoid_heading < self.local_heading): # 목표 heading에 도달하지 못했으면 우조향
-                            self.angle = 12.5 * abs(self.local_heading - self.avoid_heading)
+                            self.angle = 2 * abs(self.local_heading - self.avoid_heading)
                         else:
                             self.state = 'R'
 
@@ -169,10 +180,10 @@ class StaticAvoidance():
                 if self.local_heading != None:
                     
                     # 장애물의 위치가 중간 or 오른쪽 -> 왼쪽으로 회피 -> 오른쪽 복귀
-                    if self.avg_y < 0: # -> 장애물의 위치 기반 방향 선택
+                    if self.direction == 'left': # -> 장애물의 위치 기반 방향 선택
 
                         if (self.return_heading < self.local_heading): # 목표 heading에 도달하지 못했으면 우조향
-                            self.angle = 3 * abs(self.local_heading - self.return_heading)
+                            self.angle = 1 * abs(self.local_heading - self.return_heading)
                         else:
                             self.state = 'L'
                             self.gt_heading = None
@@ -184,7 +195,7 @@ class StaticAvoidance():
                     # 장애물의 위치가 왼쪽 -> 오른쪽으로 회피 -> 왼쪽 복귀
                     else:
                         if (self.return_heading > self.local_heading): # 목표 heading에 도달하지 못했으면 좌조향
-                            self.angle = -5 * abs(self.local_heading - self.return_heading)
+                            self.angle = -1 * abs(self.local_heading - self.return_heading)
                         else:
                             self.state = 'L'
                             self.gt_heading = None

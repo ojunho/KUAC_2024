@@ -94,11 +94,14 @@ class ArTagDriver:
 
         self.ar_after_traffic_flag = False
         self.ar_tag_not_detected_count = 0
+        self.ar_start_flag = False
 
 
 
     def run(self):
         while not rospy.is_shutdown():
+
+            rospy.loginfo(f'sorted_ar_list: {self.sorted_ar_list}')
 
             # 신호등 분기점 지났는지만 판단
             if (self.is_stopped == True) and (self.traffic_light == 'Green'):
@@ -133,7 +136,7 @@ class ArTagDriver:
 
 
                 # 태그가 인식되지 않으면 그냥 좌조향
-                elif len(self.sorted_ar_list) == 0: 
+                elif len(self.sorted_ar_list) == 0:
                     self.angle = -20
             # ------------------------------------------- 신호등 통과 전 ------------------------------------------- #
 
@@ -150,11 +153,11 @@ class ArTagDriver:
                     # ar 태그를 추종하며 따라가기
                     if len(self.sorted_ar_list) > 0:
 
-                        if self.closest_ar.z < 1.5:
-                            self.angle = int(math.degrees(18.75 * (self.closest_ar.x - 0.19) / (self.closest_ar.z)))
+                        if self.closest_ar.z < 1.33:
+                            self.angle = int(math.degrees(20 * (self.closest_ar.x - 0.225) / (self.closest_ar.z)))
 
                         else:
-                            self.angle = int(math.degrees(18.75 * (self.closest_ar.x - 0.05) / (self.closest_ar.z)))
+                            self.angle = int(math.degrees(7.25 * (self.closest_ar.x - 0.077) / (self.closest_ar.z)))
 
 
                         # 신호등 이후 AR 을 인지 했는지를 점검 -> 인지가 특정 프레임 이상 안되면 다음 미션으로 넘기기 위함.
@@ -162,8 +165,10 @@ class ArTagDriver:
                             self.ar_after_traffic_flag = True
 
                     elif len(self.sorted_ar_list) == 0: 
-
-                        self.angle = -2
+                        if self.prev_angle > 0:
+                            self.angle = self.prev_angle
+                        else:
+                            self.angle = -2
             # ------------------------------------------- 신호등 통과 이후 ------------------------------------------- #
 
 
@@ -196,11 +201,15 @@ class ArTagDriver:
 
             # ------------------------------------------- 미션 상태 관리 ------------------------------------------- #
 
-
             if self.version == 'fast':
-                self.speed = 5
+                self.speed = 6
             else:
-                self.speed = 5
+                self.speed = 6
+
+            rospy.loginfo(f"AR angle: {self.angle}")
+
+            # 이전 조향각 갱신
+            self.prev_angle = self.angle
             
             self.publishCtrlCmd(self.speed, self.angle, self.flag)
 

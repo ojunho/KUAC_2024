@@ -62,8 +62,10 @@ class TrafficDetection:
             rospy.logwarn(e)
 
 
-    def filter_circular_contours(self, contours, circularity_threshold=0.6, min_area=100):
+    def filter_circular_contours(self, contours, circularity_threshold=0.7, min_area=150):
         filtered_contours = []
+        filtered_contours_circularity = []
+        filtered_contours_area = []
         for contour in contours:
             area = cv2.contourArea(contour)
             perimeter = cv2.arcLength(contour, True)
@@ -72,7 +74,10 @@ class TrafficDetection:
             circularity = 4 * np.pi * (area / (perimeter * perimeter))
             if circularity > circularity_threshold and area > min_area:  # 원형 비율 임계값과 최소 면적
                 filtered_contours.append(contour)
-        return filtered_contours
+                filtered_contours_circularity.append(circularity)
+                filtered_contours_area.append(area)
+
+        return filtered_contours, filtered_contours_area, filtered_contours_circularity
 
     def get_contour_centers(self, contours):
         centers = []
@@ -119,8 +124,16 @@ class TrafficDetection:
         red_contours, _ = cv2.findContours(red_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         green_contours, _ = cv2.findContours(green_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        red_filtered_contours = self.filter_circular_contours(red_contours)
-        green_filtered_contours = self.filter_circular_contours(green_contours)
+        red_filtered_contours, red_contours_area, red_contours_circularity = self.filter_circular_contours(red_contours)
+        green_filtered_contours, green_contours_area, green_contours_circularity= self.filter_circular_contours(green_contours)
+
+        # rospy.loginfo(f"red_contours_area: {red_contours_area}")
+        # rospy.loginfo(f"red_contours_circularity: {red_contours_circularity}")
+        # rospy.loginfo("")
+
+        # rospy.loginfo(f"green_contours_area: {green_contours_area}")
+        # rospy.loginfo(f"green_contours_circularity: {green_contours_circularity}")
+        # rospy.loginfo("")
 
         # 빈 이미지 생성 (배경 검은색)
         red_result = np.zeros_like(red_mask)
@@ -132,6 +145,9 @@ class TrafficDetection:
 
         red_pixel_counts = np.count_nonzero(red_result)
         green_pixel_counts = np.count_nonzero(green_result)
+
+        # rospy.loginfo(f'red_pixel_counts: {red_pixel_counts}')
+        # rospy.loginfo(f'green_pixel_counts: {green_pixel_counts}')
 
         cv2.imshow('red_mask', red_mask)
         cv2.imshow('green_mask', green_mask)
